@@ -1,0 +1,37 @@
+<nav class="navbar">
+    <div class="navbar-container">
+
+        <!-- LOGO/BRAND -->
+        <div class="navbar-brand">
+            <h1>💰 MyBudget</h1>
+        </div>
+
+        <!-- MENU CENTRALE -->
+        <div class="navbar-menu">
+            <a href="/conti" class="nav-link">Conti</a>
+            <a href="/operazioni" class="nav-link">Operazioni</a>
+            <a href="/tags" class="nav-link">Tag</a>
+        </div>
+
+        <!-- SEZIONE DESTRA (Utente + Logout) -->
+        <div class="navbar-right">
+
+            <!-- NOME UTENTE -->
+            @if (currentUser) {
+            <div class="user-info">
+                <span class="username">{{ currentUser.name }}</span>
+                <span class="email">({{ currentUser.email }})</span>
+            </div>
+            }
+
+            <!-- BUTTON LOGOUT -->
+            <button class="logout-btn" (click)="onLogout()" [disabled]="loading">
+                @if (loading) {
+                Disconnessione...
+                } @else {
+                Esci
+                }
+            </button>
+        </div>
+    </div>
+</nav>
