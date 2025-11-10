@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { OperazioneService, Operazione } from '../../services/operazione.service';
+import { OperazioneService, Operazione, PaginationData } from '../../services/operazione.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -14,7 +14,13 @@ export class OperazioniList implements OnInit, OnDestroy {
   
   operazioni: Operazione[] = [];
   loading: boolean = true;
+  loadingMore: boolean = false;
   error: string | null = null;
+  
+  // Paginazione
+  pagination: PaginationData | null = null;
+  currentPage: number = 1;
+  perPage: number = 50;
 
   private destroy$ = new Subject<void>();
 
@@ -31,34 +37,59 @@ export class OperazioniList implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    this.operazioneService.getOperazioni()
+    this.operazioneService.getOperazioni({
+      page: this.currentPage,
+      per_page: this.perPage
+    })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
           console.log('Operazioni ricevute:', response);
           
           if (response.success) {
-            // Ordina per data decrescente (più recenti prima)
-            this.operazioni = (response.data as Operazione[]).sort(
-              (a, b) => new Date(b.data_operazione).getTime() - new Date(a.data_operazione).getTime()
-            );
+            // Se è la prima pagina, sostituisci; altrimenti aggiungi
+            if (this.currentPage === 1) {
+              this.operazioni = response.data as Operazione[];
+            } else {
+              this.operazioni.push(...(response.data as Operazione[]));
+            }
+            
+            // Salva i dati di paginazione
+            if (response.pagination) {
+              this.pagination = response.pagination;
+            }
           } else {
             this.error = response.message;
           }
           
           this.loading = false;
+          this.loadingMore = false;
         },
         
         error: (error) => {
           console.error('Errore nel caricamento operazioni:', error);
           this.error = `Errore: ${error.message || 'Impossibile caricare le operazioni'}`;
           this.loading = false;
+          this.loadingMore = false;
         },
         
         complete: () => {
           console.log('Caricamento operazioni completato');
         }
       });
+  }
+
+  /**
+   * Carica più operazioni (pagina successiva)
+   */
+  loadMore(): void {
+    if (!this.pagination || !this.pagination.has_more || this.loadingMore) {
+      return;
+    }
+
+    this.currentPage++;
+    this.loadingMore = true;
+    this.loadOperazioni();
   }
 
   /**
@@ -77,7 +108,8 @@ export class OperazioniList implements OnInit, OnDestroy {
         next: (response) => {
           console.log('Operazione eliminata:', response);
           
-          // Ricarica la lista
+          // Ricarica la prima pagina
+          this.currentPage = 1;
           this.loadOperazioni();
         },
         
@@ -89,7 +121,7 @@ export class OperazioniList implements OnInit, OnDestroy {
   }
 
   /**
-   * Modifica un'operazione (per ora solo log, dopo implementeremo il form)
+   * Modifica un'operazione (per ora solo log)
    */
   editOperazione(operazione: Operazione): void {
     console.log('Modifica operazione:', operazione);
@@ -114,6 +146,20 @@ export class OperazioniList implements OnInit, OnDestroy {
     if (importo > 0) return 'positivo';
     if (importo < 0) return 'negativo';
     return 'neutro';
+  }
+
+  /**
+   * Calcola le operazioni caricate finora
+   */
+  getLoadedCount(): number {
+    return this.operazioni.length;
+  }
+
+  /**
+   * Calcola il totale delle operazioni
+   */
+  getTotalCount(): number {
+    return this.pagination?.total || 0;
   }
 
   ngOnDestroy(): void {

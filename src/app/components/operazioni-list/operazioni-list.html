@@ -87,4 +87,29 @@
         Nessuna operazione trovata. Creane una!
     </div>
     }
+
+    <!-- PAGINAZIONE - Info e Button "Carica altre" -->
+    @if (!loading && pagination && pagination.has_more) {
+    <div class="pagination-section">
+        <p class="pagination-info">
+            Visualizzate {{ getLoadedCount() }} di {{ getTotalCount() }} operazioni
+        </p>
+        <button class="btn-load-more" (click)="loadMore()" [disabled]="loadingMore">
+            @if (loadingMore) {
+            Caricamento...
+            } @else {
+            Carica altre operazioni
+            }
+        </button>
+    </div>
+    }
+
+    <!-- Se sono state caricate tutte -->
+    @if (!loading && pagination && !pagination.has_more && operazioni.length > 0) {
+    <div class="pagination-section">
+        <p class="pagination-info all-loaded">
+            Tutte le {{ getTotalCount() }} operazioni sono state caricate ✓
+        </p>
+    </div>
+    }
 </div>

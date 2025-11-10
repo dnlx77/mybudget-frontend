@@ -23,10 +23,20 @@ export interface Operazione {
   updated_at?: string;
 }
 
+// Interface per i dati di paginazione
+export interface PaginationData {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  has_more: boolean;
+}
+
 // Interface per la risposta dell'API
 export interface OperazioneResponse {
   success: boolean;
   data: Operazione | Operazione[];
+  pagination?: PaginationData;
   message: string;
   count?: number;
 }
@@ -38,6 +48,8 @@ export interface FiltriOperazioni {
   giorno?: number;
   tag?: number;
   conto?: number;
+  page?: number;
+  per_page?: number;
 }
 
 @Injectable({
