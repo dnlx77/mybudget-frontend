@@ -2,26 +2,36 @@
     <h1>I Tuoi Conti</h1>
 
     <!-- STATO DI CARICAMENTO -->
-    <div *ngIf="loading" class="loading">
+    @if (loading) {
+    <div class="loading">
         Caricamento in corso...
     </div>
+    }
 
     <!-- MESSAGGIO DI ERRORE -->
-    <div *ngIf="error && !loading" class="error">
+    @if (error && !loading) {
+    <div class="error">
         {{ error }}
     </div>
+    }
 
     <!-- LISTA CONTI -->
-    <div *ngIf="!loading && !error && conti.length > 0" class="conti-list">
-        <div *ngFor="let conto of conti" class="conto-card">
+    @if (!loading && !error && conti.length > 0) {
+    <div class="conti-list">
+        @for (conto of conti; track conto.id) {
+        <div class="conto-card">
             <h3>{{ conto.nome }}</h3>
             <p class="saldo">Saldo: <strong>{{ conto.saldo_totale | currency:'EUR' }}</strong></p>
             <p class="count">Operazioni: {{ conto.operazioni?.length || 0 }}</p>
         </div>
+        }
     </div>
+    }
 
     <!-- NESSUN CONTO -->
-    <div *ngIf="!loading && !error && conti.length === 0" class="no-conti">
+    @if (!loading && !error && conti.length === 0) {
+    <div class="no-conti">
         Non hai conti. Creane uno!
     </div>
+    }
 </div>

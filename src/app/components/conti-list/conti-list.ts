@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ContoService, Conto, ContoResponse } from '../../services/conto.service';
+import { ContoService, Conto } from '../../services/conto.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-conti-list',
@@ -8,18 +10,14 @@ import { ContoService, Conto, ContoResponse } from '../../services/conto.service
   templateUrl: './conti-list.html',
   styleUrl: './conti-list.css',
 })
-export class ContiList implements OnInit {
+export class ContiList implements OnInit, OnDestroy {
   
   conti: Conto[] = [];
   loading: boolean = true;
   error: string | null = null;
 
-  /**
-   * PERCHÉ constructor(private accountService: AccountService)?
-   * - Dependency Injection: Angular inietta il servizio automaticamente
-   * - 'private' significa che è una proprietà privata della classe
-   * - Lo usiamo con 'this.accountService' dentro la classe
-   */
+  private destroy$ = new Subject<void>();
+
   constructor(private contoService: ContoService) { }
 
   /**
@@ -29,8 +27,6 @@ export class ContiList implements OnInit {
    * PERCHÉ qui e non nel constructor?
    * - Nel constructor: solo inizializzazione
    * - In ngOnInit: logica che dipende da dati/servizi
-   * 
-   * È come il metodo __construct() in PHP, ma separato dalla logica
    */
   ngOnInit(): void {
     this.loadConti();
@@ -46,33 +42,49 @@ export class ContiList implements OnInit {
     /**
      * QUI USIAMO subscribe()!
      * 
-     * this.accountService.getConti() ritorna un Observable
+     * this.contoService.getConti() ritorna un Observable
      * .subscribe() si mette in ascolto e quando arrivano i dati:
-     * - (response) => { ... }  è quello che fare quando arrivano
-     * - (error) => { ... }     è quello che fare se c'è errore
+     * - next: callback quando i dati arrivano
+     * - error: callback se c'è un errore
+     * - complete: callback quando l'observable è completato
      */
-    this.contoService.getConti().subscribe(
-      // Primo parametro: SUCCESS - quando i dati arrivano
-      (response) => {
-        console.log('Conti ricevuti:', response);
+    this.contoService.getConti()
+      .pipe(
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (response) => {
+          console.log('Conti ricevuti:', response);
+          
+          // Controlliamo che la risposta sia OK
+          if (response.success) {
+            // response.data è un array di Conto
+            this.conti = response.data as Conto[];
+          } else {
+            this.error = response.message;
+          }
+          
+          this.loading = false;
+        },
         
-        // Controlliamo che la risposta sia OK
-        if (response.success) {
-          // response.data è un array di Conto
-          this.conti = response.data as Conto[];
-        } else {
-          this.error = response.message;
+        error: (error) => {
+          console.error('Errore nel caricamento conti:', error);
+          this.error = `Errore: ${error.message || 'Impossibile caricare i conti'}`;
+          this.loading = false;
+        },
+        
+        complete: () => {
+          console.log('Caricamento conti completato');
         }
-        
-        this.loading = false;
-      },
-      
-      // Secondo parametro: ERROR - se c'è un errore HTTP
-      (error) => {
-        console.error('Errore nel caricamento conti:', error);
-        this.error = `Errore: ${error.message || 'Impossibile caricare i conti'}`;
-        this.loading = false;
-      }
-    );
+      });
+  }
+
+  /**
+   * Cleanup quando il componente viene distrutto
+   * IMPORTANTE: cancella le subscription per evitare memory leak
+   */
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }
