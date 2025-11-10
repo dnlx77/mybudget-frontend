@@ -1,0 +1,90 @@
+<div class="operazioni-container">
+    <h1>Le Tue Operazioni</h1>
+
+    <!-- STATO DI CARICAMENTO -->
+    @if (loading) {
+    <div class="loading">
+        Caricamento in corso...
+    </div>
+    }
+
+    <!-- MESSAGGIO DI ERRORE -->
+    @if (error && !loading) {
+    <div class="error">
+        {{ error }}
+    </div>
+    }
+
+    <!-- LISTA OPERAZIONI (TABELLA) -->
+    @if (!loading && !error && operazioni.length > 0) {
+    <div class="operazioni-table-wrapper">
+        <table class="operazioni-table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Conto</th>
+                    <th>Descrizione</th>
+                    <th>Tag</th>
+                    <th>Importo</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (operazione of operazioni; track operazione.id) {
+                <tr>
+                    <!-- DATA -->
+                    <td class="data">
+                        {{ formatDate(operazione.data_operazione) }}
+                    </td>
+
+                    <!-- CONTO -->
+                    <td class="conto">
+                        {{ operazione.conto?.nome || 'N/A' }}
+                    </td>
+
+                    <!-- DESCRIZIONE -->
+                    <td class="descrizione">
+                        {{ operazione.descrizione }}
+                    </td>
+
+                    <!-- TAG -->
+                    <td class="tags">
+                        @if (operazione.tags && operazione.tags.length > 0) {
+                        <div class="tag-list">
+                            @for (tag of operazione.tags; track tag.id) {
+                            <span class="tag-badge">{{ tag.nome }}</span>
+                            }
+                        </div>
+                        } @else {
+                        <span class="no-tags">-</span>
+                        }
+                    </td>
+
+                    <!-- IMPORTO -->
+                    <td class="importo" [class]="getImportoClass(operazione.importo)">
+                        <strong>{{ operazione.importo | currency:'EUR' }}</strong>
+                    </td>
+
+                    <!-- AZIONI -->
+                    <td class="azioni">
+                        <button class="btn-edit" (click)="editOperazione(operazione)" title="Modifica operazione">
+                            ✏️
+                        </button>
+                        <button class="btn-delete" (click)="deleteOperazione(operazione.id)" title="Elimina operazione">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    }
+
+    <!-- NESSUNA OPERAZIONE -->
+    @if (!loading && !error && operazioni.length === 0) {
+    <div class="no-operazioni">
+        Nessuna operazione trovata. Creane una!
+    </div>
+    }
+</div>

@@ -61,7 +61,32 @@
 .saldo {
     margin: 10px 0;
     font-size: 18px;
+    color: #333; /* ← Testo nero */
+}
+
+/* Saldo POSITIVO - Verde */
+.saldo strong.positivo {
     color: #27ae60;
+}
+
+.saldo.positivo strong {
+    color: #27ae60;
+    font-size: 20px;
+}
+
+/* Saldo NEGATIVO - Rosso */
+.saldo strong.negativo {
+    color: #e74c3c;
+}
+
+.saldo.negativo strong {
+    color: #e74c3c;
+    font-size: 20px;
+}
+
+/* Saldo NEUTRO (zero) - Grigio */
+.saldo {
+    color: #95a5a6;
 }
 
 .saldo strong {

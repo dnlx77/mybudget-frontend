@@ -21,7 +21,12 @@
         @for (conto of conti; track conto.id) {
         <div class="conto-card">
             <h3>{{ conto.nome }}</h3>
-            <p class="saldo">Saldo: <strong>{{ conto.saldo_totale | currency:'EUR' }}</strong></p>
+            <p class="saldo">
+                Saldo:
+                <strong [class.positivo]="conto.saldo_totale! > 0" [class.negativo]="conto.saldo_totale! < 0">
+                    {{ conto.saldo_totale | currency:'EUR' }}
+                </strong>
+            </p>
             <p class="count">Operazioni: {{ conto.operazioni?.length || 0 }}</p>
         </div>
         }
