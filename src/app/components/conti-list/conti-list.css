@@ -1,0 +1,75 @@
+.conti-container {
+    padding: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.conti-container h1 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.loading,
+.error,
+.no-conti {
+    padding: 15px;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.loading {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.error {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.no-conti {
+    background-color: #f5f5f5;
+    color: #666;
+}
+
+.conti-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.conto-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.conto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.conto-card h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.saldo {
+    margin: 10px 0;
+    font-size: 18px;
+    color: #27ae60;
+}
+
+.saldo strong {
+    font-size: 20px;
+}
+
+.count {
+    margin: 10px 0 0 0;
+    color: #999;
+    font-size: 14px;
+}

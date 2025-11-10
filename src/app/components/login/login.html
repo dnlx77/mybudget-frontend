@@ -1,0 +1,51 @@
+<div class="login-container">
+    <div class="login-card">
+        <h1>MyBudget - Login</h1>
+
+        <!-- MESSAGGIO DI SUCCESSO -->
+        @if (success) {
+        <div class="success">
+            {{ success }}
+        </div>
+        }
+
+        <!-- MESSAGGIO DI ERRORE -->
+        @if (error) {
+        <div class="error">
+            {{ error }}
+        </div>
+        }
+
+        <!-- FORM LOGIN -->
+        <form (ngSubmit)="onLogin()" class="login-form">
+
+            <!-- EMAIL -->
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" [(ngModel)]="email" name="email" placeholder="inserisci@email.com"
+                    [disabled]="loading" />
+            </div>
+
+            <!-- PASSWORD -->
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" [(ngModel)]="password" name="password" placeholder="••••••••"
+                    [disabled]="loading" />
+            </div>
+
+            <!-- BUTTON -->
+            <button type="submit" [disabled]="loading" class="login-btn">
+                @if (loading) {
+                Caricamento...
+                } @else {
+                Accedi
+                }
+            </button>
+        </form>
+
+        <!-- LINK REGISTER -->
+        <p class="register-link">
+            Non hai un account? <a href="/register">Registrati qui</a>
+        </p>
+    </div>
+</div>
