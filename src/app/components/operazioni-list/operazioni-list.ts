@@ -1,12 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OperazioneService, Operazione, PaginationData } from '../../services/operazione.service';
+import { OperazioneForm } from '../operazione-form/operazione-form';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-operazioni-list',
-  imports: [CommonModule],
+  imports: [CommonModule, OperazioneForm],
   templateUrl: './operazioni-list.html',
   styleUrl: './operazioni-list.css',
 })
@@ -21,6 +22,10 @@ export class OperazioniList implements OnInit, OnDestroy {
   pagination: PaginationData | null = null;
   currentPage: number = 1;
   perPage: number = 50;
+
+  // Modal
+  isFormOpen: boolean = false;
+  operazioneEdit: Operazione | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -93,6 +98,39 @@ export class OperazioniList implements OnInit, OnDestroy {
   }
 
   /**
+   * Apre il form per creare una nuova operazione
+   */
+  openFormNew(): void {
+    this.operazioneEdit = null;
+    this.isFormOpen = true;
+  }
+
+  /**
+   * Apre il form per modificare un'operazione
+   */
+  editOperazione(operazione: Operazione): void {
+    this.operazioneEdit = operazione;
+    this.isFormOpen = true;
+  }
+
+  /**
+   * Chiude il form modale
+   */
+  closeForm(): void {
+    this.isFormOpen = false;
+    this.operazioneEdit = null;
+  }
+
+  /**
+   * Chiamato quando un'operazione viene salvata dal form
+   */
+  onOperazioneSaved(): void {
+    // Ricarica da pagina 1
+    this.currentPage = 1;
+    this.loadOperazioni();
+  }
+
+  /**
    * Elimina un'operazione
    */
   deleteOperazione(id: number): void {
@@ -118,14 +156,6 @@ export class OperazioniList implements OnInit, OnDestroy {
           this.error = `Errore: ${error.message || 'Impossibile eliminare l\'operazione'}`;
         }
       });
-  }
-
-  /**
-   * Modifica un'operazione (per ora solo log)
-   */
-  editOperazione(operazione: Operazione): void {
-    console.log('Modifica operazione:', operazione);
-    // TODO: Aprire un modal/form per modificare l'operazione
   }
 
   /**

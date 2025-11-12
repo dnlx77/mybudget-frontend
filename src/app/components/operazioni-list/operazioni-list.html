@@ -1,5 +1,10 @@
 <div class="operazioni-container">
-    <h1>Le Tue Operazioni</h1>
+    <div class="header-section">
+        <h1>Le Tue Operazioni</h1>
+        <button class="btn-new-operazione" (click)="openFormNew()">
+            ➕ Nuova Operazione
+        </button>
+    </div>
 
     <!-- STATO DI CARICAMENTO -->
     @if (loading) {
@@ -113,3 +118,7 @@
     </div>
     }
 </div>
+
+<!-- MODAL FORM OPERAZIONE -->
+<app-operazione-form [isOpen]="isFormOpen" [operazioneEdit]="operazioneEdit" (close)="closeForm()"
+    (saved)="onOperazioneSaved()"></app-operazione-form>

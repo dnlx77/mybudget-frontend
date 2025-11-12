@@ -1,0 +1,159 @@
+<!-- MODAL OVERLAY -->
+@if (isOpen) {
+<div class="modal-overlay" (click)="onClose()"></div>
+}
+
+<!-- MODAL -->
+@if (isOpen) {
+<div class="modal">
+    <div class="modal-content">
+
+        <!-- HEADER -->
+        <div class="modal-header">
+            <h2>
+                @if (isEditMode) {
+                Modifica Operazione
+                } @else {
+                Nuova Operazione
+                }
+            </h2>
+            <button class="close-btn" (click)="onClose()">✕</button>
+        </div>
+
+        <!-- BODY -->
+        <div class="modal-body">
+
+            <!-- MESSAGGIO DI SUCCESSO -->
+            @if (success) {
+            <div class="success-message">
+                {{ success }}
+            </div>
+            }
+
+            <!-- MESSAGGIO DI ERRORE -->
+            @if (error) {
+            <div class="error-message">
+                {{ error }}
+            </div>
+            }
+
+            <!-- FORM -->
+            <form (ngSubmit)="onSubmit()" class="operazione-form">
+
+                <!-- DATA OPERAZIONE -->
+                <div class="form-group">
+                    <label for="data">Data Operazione *</label>
+                    <input type="date" id="data" [(ngModel)]="data_operazione" name="data" [max]="getTodayDate()"
+                        required [disabled]="loading" />
+                </div>
+
+                <!-- CONTO ORIGINE -->
+                <div class="form-group">
+                    <label for="conto">Conto Origine *</label>
+                    @if (loadingConti) {
+                    <select id="conto" disabled>
+                        <option>Caricamento conti...</option>
+                    </select>
+                    } @else {
+                    <select id="conto" [(ngModel)]="conto_id" name="conto" required [disabled]="loading">
+                        <option value="">-- Seleziona un conto --</option>
+                        @for (conto of conti; track conto.id) {
+                        <option [value]="conto.id">{{ conto.nome }}</option>
+                        }
+                    </select>
+                    }
+                </div>
+
+                <!-- CONTO DESTINAZIONE (opzionale - se valorizzato è un trasferimento) -->
+                <div class="form-group">
+                    <label for="conto-dest">Conto Destinazione (opzionale)</label>
+                    @if (loadingConti) {
+                    <select id="conto-dest" disabled>
+                        <option>Caricamento conti...</option>
+                    </select>
+                    } @else {
+                    <select id="conto-dest" [(ngModel)]="conto_destinazione_id" name="conto_destinazione"
+                        [disabled]="loading">
+                        <option [value]="null">-- Nessun trasferimento --</option>
+                        @for (conto of conti; track conto.id) {
+                        @if (conto.id !== conto_id) {
+                        <option [value]="conto.id">{{ conto.nome }}</option>
+                        }
+                        }
+                    </select>
+                    }
+                    <small class="help-text">Lascia vuoto se non è un trasferimento</small>
+                </div>
+
+                <!-- IMPORTO -->
+                <div class="form-group">
+                    <label for="importo">Importo (€) *</label>
+                    <input type="number" id="importo" [(ngModel)]="importo" name="importo" step="0.01"
+                        placeholder="Es: -50.50 o 100.00" required [disabled]="loading" />
+                    <small class="help-text">Negativo per spese, positivo per entrate</small>
+                </div>
+
+                <!-- DESCRIZIONE -->
+                <div class="form-group">
+                    <label for="descrizione">Descrizione *</label>
+                    <input type="text" id="descrizione" [(ngModel)]="descrizione" name="descrizione"
+                        placeholder="Es: Spesa alimentari" required [disabled]="loading" />
+                </div>
+
+                <!-- TAG (con autocomplete) -->
+                <div class="form-group">
+                    <label for="tag-search">Tag (opzionale)</label>
+                    <div class="tag-search-container">
+                
+                        <!-- TAG SELEZIONATI INLINE -->
+                        <div class="selected-tags-inline">
+                            @for (tag of selectedTags; track tag.id) {
+                            <span class="tag-badge-inline">
+                                {{ tag.nome }}
+                                <button type="button" class="remove-tag-btn" (click)="removeTag(tag.id)" [disabled]="loading">
+                                    ✕
+                                </button>
+                            </span>
+                            }
+                        </div>
+                
+                        <!-- INPUT PER CERCARE -->
+                        <input type="text" id="tag-search" [(ngModel)]="tagSearchInput" (input)="onTagSearchInput(tagSearchInput)"
+                            name="tagSearch" placeholder="Digita per cercare tag..." [disabled]="loading" autocomplete="off"
+                            class="tag-search-input" />
+                
+                        <!-- SUGGESTIONS DROPDOWN -->
+                        @if (showTagSuggestions && filteredTags.length > 0) {
+                        <div class="tag-suggestions">
+                            @for (tag of filteredTags; track tag.id) {
+                            <div class="tag-suggestion-item" (click)="selectTag(tag)">
+                                {{ tag.nome }}
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- BUTTONS -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" (click)="onClose()" [disabled]="loading">
+                        Annulla
+                    </button>
+                    <button type="submit" class="btn-save" [disabled]="loading">
+                        @if (loading) {
+                        Salvataggio...
+                        } @else {
+                        @if (isEditMode) {
+                        Aggiorna
+                        } @else {
+                        Crea
+                        }
+                        }
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}
