@@ -45,8 +45,9 @@
         <tr>
           <th>Data</th>
           <th>Conto</th>
-          <th>Importo</th>
+          <th>Tag</th>
           <th>Descrizione</th>
+          <th>Importo</th>
           <th>Azioni</th>
         </tr>
       </thead>
@@ -55,11 +56,7 @@
         <tr [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
           <td class="data">{{ op.data_operazione | date:'dd/MM/yyyy' }}</td>
           <td class="conto">{{ op.conto?.nome || 'N/A' }}</td>
-          <td class="importo" [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
-            {{ op.importo | currency:'EUR':'symbol':'1.2-2' }}
-          </td>
-          <td class="descrizione">
-            <span class="desc-text">{{ op.descrizione }}</span>
+          <td>
             @if (op.tags && op.tags.length > 0) {
             <div class="tags">
               @for (tag of op.tags; track tag.id) {
@@ -67,6 +64,12 @@
               }
             </div>
             }
+          </td>
+          <td class="descrizione">
+            <span class="desc-text">{{ op.descrizione }}</span>
+          </td>
+          <td class="importo" [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
+            {{ op.importo | currency:'EUR':'symbol':'1.2-2' }}
           </td>
           <td class="azioni">
             <button class="btn-action btn-edit" title="Modifica" (click)="editOperazione(op)">✏️</button>
@@ -78,30 +81,9 @@
     </table>
   </div>
 
-  <!-- Paginazione Tradizionale -->
-  <div class="pagination-section">
-    <div class="pagination-info">
-      Pagina {{ currentPage }} di {{ totalPages }} ({{ totalCount }} operazioni totali)
-    </div>
-
-    <div class="pagination-controls">
-      <button class="btn-pagination" (click)="previousPage()" [disabled]="currentPage === 1">
-        ◀ Precedente
-      </button>
-
-      <div class="page-numbers">
-        @for (page of getPageNumbers(); track page) {
-        <button class="btn-page" [class.active]="page === currentPage" (click)="goToPage(page)">
-          {{ page }}
-        </button>
-        }
-      </div>
-
-      <button class="btn-pagination" (click)="nextPage()" [disabled]="currentPage === totalPages">
-        Successiva ▶
-      </button>
-    </div>
-  </div>
+  <!-- Paginazione -->
+  <app-pagination [currentPage]="currentPage" [totalPages]="totalPages" [totalCount]="totalCount"
+    (pageChange)="goToPage($event)"></app-pagination>
 
   } @else {
   <div class="no-data">
