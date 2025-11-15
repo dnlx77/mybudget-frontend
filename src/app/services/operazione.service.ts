@@ -64,26 +64,19 @@ export class OperazioneService {
    * GET /api/v1/operazioni
    * Recupera tutte le operazioni con filtri opzionali
    */
-  getOperazioni(filtri?: FiltriOperazioni): Observable<OperazioneResponse> {
-    let url = this.apiUrl;
-    
-    // Aggiungi i parametri di query se presenti
-    if (filtri) {
-      const params = new URLSearchParams();
-      if (filtri.anno) params.append('anno', filtri.anno.toString());
-      if (filtri.mese) params.append('mese', filtri.mese.toString());
-      if (filtri.giorno) params.append('giorno', filtri.giorno.toString());
-      if (filtri.tag) params.append('tag', filtri.tag.toString());
-      if (filtri.conto) params.append('conto', filtri.conto.toString());
-      
-      const queryString = params.toString();
-      if (queryString) {
-        url += `?${queryString}`;
-      }
-    }
-    
-    return this.http.get<OperazioneResponse>(url);
+  getOperazioni(params?: any): Observable<any> {
+  let url = this.apiUrl;
+  
+  if (params) {
+    const queryParams = new URLSearchParams();
+    Object.keys(params).forEach(key => {
+      queryParams.append(key, params[key]);
+    });
+    url += `?${queryParams.toString()}`;
   }
+  
+  return this.http.get<any>(url);
+}
 
   /**
    * GET /api/v1/operazioni/{id}

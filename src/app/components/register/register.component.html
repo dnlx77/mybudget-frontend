@@ -1,0 +1,109 @@
+<div class="register-container">
+  <div class="register-card">
+    
+    <!-- Header -->
+    <div class="register-header">
+      <h1>💰 MyBudget</h1>
+      <h2>Crea un Nuovo Account</h2>
+      <p class="subtitle">Gestisci le tue finanze in modo intelligente</p>
+    </div>
+
+    <!-- Form -->
+    <form (ngSubmit)="onRegister()" class="register-form">
+      
+      <!-- Error Alert -->
+      @if (error) {
+        <div class="alert alert-error">
+          <strong>Errore:</strong> {{ error }}
+        </div>
+      }
+
+      <!-- Name -->
+      <div class="form-group">
+        <label for="name">Nome Completo *</label>
+        <input
+          id="name"
+          type="text"
+          [(ngModel)]="name"
+          name="name"
+          placeholder="Es: Mario Rossi"
+          required
+          [disabled]="loading"
+          autofocus
+        />
+        @if (getFieldError('name')) {
+          <small class="field-error">{{ getFieldError('name') }}</small>
+        }
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email *</label>
+        <input
+          id="email"
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="Es: mario@example.com"
+          required
+          [disabled]="loading"
+        />
+        @if (getFieldError('email')) {
+          <small class="field-error">{{ getFieldError('email') }}</small>
+        }
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password * <small>(minimo 8 caratteri)</small></label>
+        <input
+          id="password"
+          type="password"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Almeno 8 caratteri"
+          required
+          [disabled]="loading"
+        />
+        @if (getFieldError('password')) {
+          <small class="field-error">{{ getFieldError('password') }}</small>
+        }
+      </div>
+
+      <!-- Password Confirmation -->
+      <div class="form-group">
+        <label for="password_confirmation">Conferma Password *</label>
+        <input
+          id="password_confirmation"
+          type="password"
+          [(ngModel)]="password_confirmation"
+          name="password_confirmation"
+          placeholder="Ripeti la password"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn-register" [disabled]="loading">
+        @if (loading) {
+          ⏳ Registrazione in corso...
+        } @else {
+          ✅ Registrati
+        }
+      </button>
+
+    </form>
+
+    <!-- Link al Login -->
+    <div class="register-footer">
+      <p>
+        Hai già un account?
+        <button type="button" class="link-button" (click)="goToLogin()" [disabled]="loading">
+          Accedi qui
+        </button>
+      </p>
+    </div>
+
+  </div>
+</div>

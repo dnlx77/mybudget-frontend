@@ -1,0 +1,51 @@
+<div class="conti-panel">
+
+  <!-- Errore -->
+  @if (error) {
+  <div class="alert alert-error">
+    {{ error }}
+  </div>
+  }
+
+  <!-- Loading -->
+  @if (loading) {
+  <div class="skeleton-loader">
+    <div class="skeleton-item"></div>
+    <div class="skeleton-item"></div>
+    <div class="skeleton-item"></div>
+  </div>
+  } @else {
+
+  <!-- Totale Conti -->
+  <div class="totale-section">
+    <h3>Totale Conti</h3>
+    <div class="totale-value" [class.positivo]="(totaleSaldi ?? 0) >= 0" [class.negativo]="(totaleSaldi ?? 0) < 0">
+      {{ totaleSaldi | currency:'EUR':'symbol':'1.2-2' }}
+    </div>
+  </div>
+
+  <!-- Elenco Conti -->
+  <div class="elenco-conti">
+    <h3>I Tuoi Conti</h3>
+
+    @if (conti.length > 0) {
+    <div class="conti-list">
+      @for (conto of conti; track conto.id) {
+      <div class="conto-card">
+        <div class="conto-header">
+          <span class="conto-nome">{{ conto.nome }}</span>
+        </div>
+        <div class="conto-saldo" [class.positivo]="(conto.saldo_totale ?? 0) >= 0"
+          [class.negativo]="(conto.saldo_totale ?? 0) < 0">
+          {{ conto.saldo_totale | currency:'EUR':'symbol':'1.2-2' }}
+        </div>
+      </div>
+      }
+    </div>
+    } @else {
+    <p class="no-data">Nessun conto trovato</p>
+    }
+  </div>
+
+  }
+</div>

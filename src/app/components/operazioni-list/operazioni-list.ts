@@ -1,13 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OperazioneService, Operazione, PaginationData } from '../../services/operazione.service';
-import { OperazioneForm } from '../operazione-form/operazione-form';
+import { OperazioneFormComponent } from '../operazione-form/operazione-form';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-operazioni-list',
-  imports: [CommonModule, OperazioneForm],
+  imports: [CommonModule, OperazioneFormComponent],
   templateUrl: './operazioni-list.html',
   styleUrl: './operazioni-list.css',
 })

@@ -1,0 +1,113 @@
+<div class="operazioni-panel">
+
+  <!-- Header -->
+  <div class="panel-header">
+    <h2>Operazioni</h2>
+    <button class="btn-nuova-operazione" (click)="openFormNew()">
+      ➕ Nuova Operazione
+    </button>
+  </div>
+
+  <!-- Form Modal -->
+  <app-operazione-form [isOpen]="isFormOpen" [operazioneEdit]="operazioneEdit" (close)="closeForm()"
+    (saved)="onOperazioneSaved()"></app-operazione-form>
+
+  <!-- Filtri -->
+  <div class="filtri-section">
+    <input type="date" [(ngModel)]="filterData" (change)="onFilterChange()" placeholder="Filtro per data"
+      class="filtro-input" />
+    <input type="text" [(ngModel)]="filterConto" (change)="onFilterChange()" placeholder="Filtro per conto"
+      class="filtro-input" />
+    <input type="text" [(ngModel)]="filterTag" (change)="onFilterChange()" placeholder="Filtro per tag"
+      class="filtro-input" />
+  </div>
+
+  <!-- Errore -->
+  @if (error) {
+  <div class="alert alert-error">
+    {{ error }}
+  </div>
+  }
+
+  <!-- Loading -->
+  @if (loading) {
+  <div class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Caricamento operazioni...</p>
+  </div>
+  } @else {
+
+  <!-- Tabella Operazioni -->
+  @if (operazioni.length > 0) {
+  <div class="operazioni-table-container">
+    <table class="operazioni-table">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Conto</th>
+          <th>Importo</th>
+          <th>Descrizione</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (op of operazioni; track op.id) {
+        <tr [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
+          <td class="data">{{ op.data_operazione | date:'dd/MM/yyyy' }}</td>
+          <td class="conto">{{ op.conto?.nome || 'N/A' }}</td>
+          <td class="importo" [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
+            {{ op.importo | currency:'EUR':'symbol':'1.2-2' }}
+          </td>
+          <td class="descrizione">
+            <span class="desc-text">{{ op.descrizione }}</span>
+            @if (op.tags && op.tags.length > 0) {
+            <div class="tags">
+              @for (tag of op.tags; track tag.id) {
+              <span class="tag-badge">{{ tag.nome }}</span>
+              }
+            </div>
+            }
+          </td>
+          <td class="azioni">
+            <button class="btn-action btn-edit" title="Modifica" (click)="editOperazione(op)">✏️</button>
+            <button class="btn-action btn-delete" title="Elimina">🗑️</button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginazione Tradizionale -->
+  <div class="pagination-section">
+    <div class="pagination-info">
+      Pagina {{ currentPage }} di {{ totalPages }} ({{ totalCount }} operazioni totali)
+    </div>
+
+    <div class="pagination-controls">
+      <button class="btn-pagination" (click)="previousPage()" [disabled]="currentPage === 1">
+        ◀ Precedente
+      </button>
+
+      <div class="page-numbers">
+        @for (page of getPageNumbers(); track page) {
+        <button class="btn-page" [class.active]="page === currentPage" (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        }
+      </div>
+
+      <button class="btn-pagination" (click)="nextPage()" [disabled]="currentPage === totalPages">
+        Successiva ▶
+      </button>
+    </div>
+  </div>
+
+  } @else {
+  <div class="no-data">
+    <p>Nessuna operazione trovata</p>
+  </div>
+  }
+
+  }
+</div>
