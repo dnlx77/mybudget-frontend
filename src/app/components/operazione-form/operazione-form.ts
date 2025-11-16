@@ -147,10 +147,15 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     const searchLower = value.toLowerCase();
-    this.filteredTags = this.allTags.filter(tag => 
-      tag.nome.toLowerCase().includes(searchLower) &&
-      !this.selectedTags.some(st => st.id === tag.id)
-    );
+    this.filteredTags = this.allTags.filter(tag => {
+      // Controlla che il nome contenga la ricerca
+      const matchesSearch = tag.nome.toLowerCase().includes(searchLower);
+      
+      // Controlla che non sia già selezionato
+      const notSelected = !this.selectedTags.some(st => st.id === tag.id);
+      
+      return matchesSearch && notSelected;
+    });
 
     this.showTagSuggestions = this.filteredTags.length > 0;
   }
@@ -168,8 +173,8 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
 
   onSubmit(): void {
     // Validazione
-    if (!this.data_operazione || this.importo === null || !this.descrizione || !this.conto_id) {
-      this.error = 'Compilare tutti i campi obbligatori';
+    if (!this.data_operazione || this.importo === null || !this.conto_id || this.selectedTags.length === 0) {
+      this.error = 'Compilare tutti i campi obbligatori (Data, Importo, Conto, almeno 1 Tag)';
       return;
     }
 
@@ -186,6 +191,8 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
       conto_destinazione_id: this.conto_destinazione_id,
       tags: this.selectedTags.map(t => t.id),
     };
+
+    console.log('📤 Payload inviato:', operazione);  // ← Aggiungi questo per debuggare
 
     const operation$ = this.isEditMode
       ? this.operazioneService.updateOperazione(this.operazioneEdit!.id, operazione)

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OperazioneService, Operazione } from '../../services/operazione.service';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
+import { OperazioneFormComponent } from '../../components/operazione-form/operazione-form';
+import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -22,7 +24,7 @@ interface PaginatedResponse {
 @Component({
   selector: 'app-operazioni-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, PaginationComponent, OperazioneFormComponent, CurrencyEuroPipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './operazioni-panel.html',
   styleUrl: './operazioni-panel.css',
@@ -31,6 +33,11 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
   
   operazioni: Operazione[] = [];
   
+  // Statistiche
+  guadagno: number = 0;
+  spese: number = 0;
+  saldo: number = 0;
+
   currentPage: number = 1;
   totalPages: number = 1;
   totalCount: number = 0;
@@ -55,6 +62,7 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('🟢 OperazioniPanel inizializzato');
     this.loadOperazioni();
+    this.loadStatistiche();  // ← Chiama statistiche
   }
 
   loadOperazioni(): void {
@@ -100,6 +108,29 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
       });
   }
 
+  loadStatistiche(): void {
+  const params: any = {};
+  
+  // Applica gli stessi filtri della tabella
+  if (this.filterData) params.data = this.filterData;
+  if (this.filterConto) params.conto_id = this.filterConto;
+  if (this.filterTag) params.tag = this.filterTag;
+
+  this.operazioneService.getStatistiche(params)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.guadagno = response.data.guadagno;
+          this.spese = response.data.spese;
+          this.saldo = response.data.saldo;
+          console.log('📊 Statistiche totali:', response.data);
+        }
+      },
+      error: (error) => console.error('Errore statistiche:', error)
+    });
+}
+
   goToPage(page: number): void {
     console.log('🔄 goToPage:', page);
     
@@ -121,6 +152,7 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
     console.log('🔎 Filtri cambiati, ricomincia da pagina 1');
     this.currentPage = 1;
     this.loadOperazioni();
+    this.loadStatistiche();  // Ricarica statistiche con i nuovi filtri
   }
 
   openFormNew(): void {

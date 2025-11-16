@@ -20,7 +20,7 @@
   <div class="totale-section">
     <h3>Totale Conti</h3>
     <div class="totale-value" [class.positivo]="(totaleSaldi ?? 0) >= 0" [class.negativo]="(totaleSaldi ?? 0) < 0">
-      {{ totaleSaldi | currency:'EUR':'symbol':'1.2-2' }}
+      {{ totaleSaldi | currencyEuro }}
     </div>
   </div>
 
@@ -37,7 +37,7 @@
         </div>
         <div class="conto-saldo" [class.positivo]="(conto.saldo_totale ?? 0) >= 0"
           [class.negativo]="(conto.saldo_totale ?? 0) < 0">
-          {{ conto.saldo_totale | currency:'EUR':'symbol':'1.2-2' }}
+          {{ conto.saldo_totale | currencyEuro }}
         </div>
       </div>
       }

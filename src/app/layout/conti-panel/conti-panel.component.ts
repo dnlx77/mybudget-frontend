@@ -1,12 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ContoService, Conto } from '../../services/conto.service';
+import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-conti-panel',
-  imports: [CommonModule],
+  imports: [CommonModule, CurrencyEuroPipe],
   templateUrl: './conti-panel.html',
   styleUrl: './conti-panel.css',
 })

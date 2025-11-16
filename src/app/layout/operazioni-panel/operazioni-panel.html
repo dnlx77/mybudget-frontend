@@ -29,6 +29,26 @@
   </div>
   }
 
+  <!-- STATISTICHE -->
+  <div class="statistics-section">
+    <div class="stat-card guadagno">
+      <div class="stat-label">Guadagni</div>
+      <div class="stat-value">{{ guadagno | currencyEuro }}</div>
+    </div>
+  
+    <div class="stat-card spese">
+      <div class="stat-label">Spese</div>
+      <div class="stat-value">{{ spese | currencyEuro }}</div>
+    </div>
+  
+    <div class="stat-card saldo">
+      <div class="stat-label">Saldo</div>
+      <div class="stat-value" [class.positivo]="saldo > 0" [class.negativo]="saldo < 0">
+        {{ saldo | currencyEuro }}
+      </div>
+    </div>
+  </div>
+
   <!-- Loading -->
   @if (loading) {
   <div class="loading-spinner">
@@ -69,7 +89,7 @@
             <span class="desc-text">{{ op.descrizione }}</span>
           </td>
           <td class="importo" [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
-            {{ op.importo | currency:'EUR':'symbol':'1.2-2' }}
+            {{ op.importo | currencyEuro }}
           </td>
           <td class="azioni">
             <button class="btn-action btn-edit" title="Modifica" (click)="editOperazione(op)">✏️</button>

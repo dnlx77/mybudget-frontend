@@ -109,4 +109,8 @@ export class OperazioneService {
   deleteOperazione(id: number): Observable<OperazioneResponse> {
     return this.http.delete<OperazioneResponse>(`${this.apiUrl}/${id}`);
   }
+
+  getStatistiche(params?: any): Observable<any> {
+  return this.http.get(`${this.apiUrl}/statistiche/totali`, { params });
+}
 }
