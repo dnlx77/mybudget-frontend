@@ -1,6 +1,8 @@
 <div class="operazioni-panel">
 
-  <!-- Header -->
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
   <div class="panel-header">
     <h2>Operazioni</h2>
     <button class="btn-nuova-operazione" (click)="openFormNew()">
@@ -8,44 +10,56 @@
     </button>
   </div>
 
-  <!-- Form Modal -->
+  <!-- ============================================================
+       FORM MODAL
+       ============================================================ -->
   <app-operazione-form [isOpen]="isFormOpen" [operazioneEdit]="operazioneEdit" (close)="closeForm()"
-    (saved)="onOperazioneSaved()"></app-operazione-form>
+    (saved)="onOperazioneSaved()">
+  </app-operazione-form>
 
-  <!-- Filtri -->
+  <!-- ============================================================
+       FILTRI
+       ============================================================ -->
   <div class="filtri-section">
+    <!-- Riga 1: Date -->
     <div class="filtri-row">
       <input type="number" [(ngModel)]="filterAnno" (change)="onFilterChange()" placeholder="Anno (es: 2025)"
         class="filtro-input" min="2000" max="2099" />
+
       <input type="number" [(ngModel)]="filterMese" (change)="onFilterChange()" placeholder="Mese (1-12)"
         class="filtro-input" min="1" max="12" />
+
       <input type="date" [(ngModel)]="filterData" (change)="onFilterChange()" placeholder="Filtro per data"
         class="filtro-input" />
     </div>
-  
+
+    <!-- Riga 2: Conto e Tag -->
     <div class="filtri-row">
+      <!-- Select Conto -->
       <select [(ngModel)]="filterConto" (change)="onFilterChange()" class="filtro-input filtro-select">
         <option value="">-- Seleziona Conto --</option>
         @for (conto of conti; track conto.id) {
         <option [value]="conto.id">{{ conto.nome }}</option>
         }
       </select>
+
       <!-- Tag Search con Autocomplete -->
       <div class="tag-filter-container">
         <div class="filtro-input tag-filter-input">
-          <!-- Tag selezionato dentro l'input -->
+          <!-- Tag selezionato -->
           @if (selectedTagFilter) {
           <span class="tag-filter-badge">
             {{ selectedTagFilter.nome }}
             <button class="btn-clear-tag" (click)="clearTagFilter()">✕</button>
           </span>
           }
-      
+
           <!-- Input ricerca -->
           <input type="text" [(ngModel)]="tagSearchInput" (input)="onTagSearchInput($event.target.value)"
             placeholder="Ricerca tag..." class="tag-filter-search-input" />
         </div>
-      
+
+        <!-- Suggerimenti tag -->
         @if (tagSearchInput && filteredTags.length > 0) {
         <div class="tag-filter-suggestions">
           @for (tag of filteredTags; track tag.id) {
@@ -59,25 +73,29 @@
     </div>
   </div>
 
-  <!-- Errore -->
+  <!-- ============================================================
+       ERRORE
+       ============================================================ -->
   @if (error) {
   <div class="alert alert-error">
     {{ error }}
   </div>
   }
 
-  <!-- STATISTICHE -->
+  <!-- ============================================================
+       STATISTICHE
+       ============================================================ -->
   <div class="statistics-section">
     <div class="stat-card guadagno">
       <div class="stat-label">Guadagni</div>
       <div class="stat-value">{{ guadagno | currencyEuro }}</div>
     </div>
-  
+
     <div class="stat-card spese">
       <div class="stat-label">Spese</div>
       <div class="stat-value">{{ spese | currencyEuro }}</div>
     </div>
-  
+
     <div class="stat-card saldo">
       <div class="stat-label">Saldo</div>
       <div class="stat-value" [class.positivo]="saldo > 0" [class.negativo]="saldo < 0">
@@ -86,7 +104,9 @@
     </div>
   </div>
 
-  <!-- Loading -->
+  <!-- ============================================================
+       LOADING
+       ============================================================ -->
   @if (loading) {
   <div class="loading-spinner">
     <div class="spinner"></div>
@@ -94,7 +114,9 @@
   </div>
   } @else {
 
-  <!-- Tabella Operazioni -->
+  <!-- ============================================================
+         TABELLA OPERAZIONI
+         ============================================================ -->
   @if (operazioni.length > 0) {
   <div class="operazioni-table-container">
     <table class="operazioni-table">
@@ -110,7 +132,7 @@
       </thead>
       <tbody>
         @for (op of operazioni; track op.id) {
-        <tr [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
+        <tr [class.positivo]="op.importo > 0" [class.negativo]="op.importo < 0">
           <td class="data">{{ op.data_operazione | date:'dd/MM/yyyy' }}</td>
           <td class="conto">{{ op.conto?.nome || 'N/A' }}</td>
           <td>
@@ -125,7 +147,7 @@
           <td class="descrizione">
             <span class="desc-text">{{ op.descrizione }}</span>
           </td>
-          <td class="importo" [class.positivo]="(op.importo ?? 0) > 0" [class.negativo]="(op.importo ?? 0) < 0">
+          <td class="importo" [class.positivo]="op.importo > 0" [class.negativo]="op.importo < 0">
             {{ op.importo | currencyEuro }}
           </td>
           <td class="azioni">
@@ -138,11 +160,17 @@
     </table>
   </div>
 
-  <!-- Paginazione -->
+  <!-- ============================================================
+           PAGINAZIONE
+           ============================================================ -->
   <app-pagination [currentPage]="currentPage" [totalPages]="totalPages" [totalCount]="totalCount"
-    (pageChange)="goToPage($event)"></app-pagination>
+    (pageChange)="goToPage($event)">
+  </app-pagination>
 
   } @else {
+  <!-- ============================================================
+           NO DATA
+           ============================================================ -->
   <div class="no-data">
     <p>Nessuna operazione trovata</p>
   </div>
