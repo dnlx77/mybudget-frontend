@@ -358,6 +358,137 @@
   color: #dc3545;
 }
 
+/* Filtri */
+.filtri-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.filtri-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 8px;
+  margin: 2px;
+  padding: 0;
+}
+
+.filtri-row:last-child {
+  grid-template-columns: repeat(2, 1fr); 
+}
+
+.filtro-input {
+  padding: 5px 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  height: 32px; 
+  box-sizing: border-box;
+  margin: 0 !important;
+}
+
+.filtro-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filtro-select {
+  padding: 5px 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  height: 32px;
+  box-sizing: border-box;
+  margin: 0 !important;
+}
+
+.tag-filter-container {
+  position: relative;
+}
+
+.tag-filter-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px !important;
+  height: auto;
+  min-height: 32px;
+}
+
+.tag-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #e0e7ff;
+  color: #667eea;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-clear-tag {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  margin: 0;
+  transition: all 0.2s;
+}
+
+.btn-clear-tag:hover {
+  color: #e74c3c;
+  transform: scale(1.2);
+}
+
+.tag-filter-search-input {
+  flex: 1;
+  min-width: 100px;
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  outline: none;
+  font-size: 0.8rem;
+  height: auto;
+}
+
+.tag-filter-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 100;
+  border-radius: 0 0 6px 6px;
+}
+
+.tag-filter-item {
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.8rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tag-filter-item:last-child {
+  border-bottom: none;
+}
+
+.tag-filter-item:hover {
+  background-color: #f0f0f0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .filtri-section {

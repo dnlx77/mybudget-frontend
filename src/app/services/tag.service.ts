@@ -19,6 +19,13 @@ export interface TagResponse {
   count?: number;
 }
 
+// Interface per la risposta lista tag
+export interface TagsListResponse {
+  success: boolean;
+  data: TagModel[];  // ← Sempre array!
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -31,8 +38,8 @@ export class TagService {
    * GET /api/v1/tags
    * Recupera tutti i tag
    */
-  getTags(): Observable<TagResponse> {
-    return this.http.get<TagResponse>(this.apiUrl);
+  getTags(): Observable<TagsListResponse> {
+    return this.http.get<TagsListResponse>(this.apiUrl);
   }
 
   /**

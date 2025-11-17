@@ -13,6 +13,14 @@ export interface Conto {
   updated_at?: string;
 }
 
+// Interface per la risposta lista conti
+export interface ContiListResponse {
+  success: boolean;
+  data: Conto[];  // ← Sempre array!
+  message: string;
+  count?: number;
+}
+
 // Interface per la risposta dell'API
 export interface ContoResponse {
   success: boolean;
@@ -33,8 +41,8 @@ export class ContoService {
    * GET /api/conti
    * Recupera tutti i conti con i loro saldi
    */
-  getConti(): Observable<ContoResponse> {
-    return this.http.get<ContoResponse>(this.apiUrl);
+  getConti(): Observable<ContiListResponse> {
+    return this.http.get<ContiListResponse>(this.apiUrl);
   }
 
   /**

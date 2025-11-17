@@ -14,12 +14,49 @@
 
   <!-- Filtri -->
   <div class="filtri-section">
-    <input type="date" [(ngModel)]="filterData" (change)="onFilterChange()" placeholder="Filtro per data"
-      class="filtro-input" />
-    <input type="text" [(ngModel)]="filterConto" (change)="onFilterChange()" placeholder="Filtro per conto"
-      class="filtro-input" />
-    <input type="text" [(ngModel)]="filterTag" (change)="onFilterChange()" placeholder="Filtro per tag"
-      class="filtro-input" />
+    <div class="filtri-row">
+      <input type="number" [(ngModel)]="filterAnno" (change)="onFilterChange()" placeholder="Anno (es: 2025)"
+        class="filtro-input" min="2000" max="2099" />
+      <input type="number" [(ngModel)]="filterMese" (change)="onFilterChange()" placeholder="Mese (1-12)"
+        class="filtro-input" min="1" max="12" />
+      <input type="date" [(ngModel)]="filterData" (change)="onFilterChange()" placeholder="Filtro per data"
+        class="filtro-input" />
+    </div>
+  
+    <div class="filtri-row">
+      <select [(ngModel)]="filterConto" (change)="onFilterChange()" class="filtro-input filtro-select">
+        <option value="">-- Seleziona Conto --</option>
+        @for (conto of conti; track conto.id) {
+        <option [value]="conto.id">{{ conto.nome }}</option>
+        }
+      </select>
+      <!-- Tag Search con Autocomplete -->
+      <div class="tag-filter-container">
+        <div class="filtro-input tag-filter-input">
+          <!-- Tag selezionato dentro l'input -->
+          @if (selectedTagFilter) {
+          <span class="tag-filter-badge">
+            {{ selectedTagFilter.nome }}
+            <button class="btn-clear-tag" (click)="clearTagFilter()">✕</button>
+          </span>
+          }
+      
+          <!-- Input ricerca -->
+          <input type="text" [(ngModel)]="tagSearchInput" (input)="onTagSearchInput($event.target.value)"
+            placeholder="Ricerca tag..." class="tag-filter-search-input" />
+        </div>
+      
+        @if (tagSearchInput && filteredTags.length > 0) {
+        <div class="tag-filter-suggestions">
+          @for (tag of filteredTags; track tag.id) {
+          <div class="tag-filter-item" (click)="selectTag(tag)">
+            {{ tag.nome }}
+          </div>
+          }
+        </div>
+        }
+      </div>
+    </div>
   </div>
 
   <!-- Errore -->
@@ -93,7 +130,7 @@
           </td>
           <td class="azioni">
             <button class="btn-action btn-edit" title="Modifica" (click)="editOperazione(op)">✏️</button>
-            <button class="btn-action btn-delete" title="Elimina">🗑️</button>
+            <button class="btn-action btn-delete" title="Elimina" (click)="deleteOperazione(op)">🗑️</button>
           </td>
         </tr>
         }

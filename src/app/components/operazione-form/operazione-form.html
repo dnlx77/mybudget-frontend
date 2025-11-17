@@ -43,13 +43,6 @@
             <!-- Form -->
             <form (ngSubmit)="onSubmit()">
 
-                <!-- Data Operazione -->
-                <div class="form-group">
-                    <label for="data">Data Operazione *</label>
-                    <input id="data" type="date" [(ngModel)]="data_operazione" name="data_operazione"
-                        [max]="getTodayDate()" required [disabled]="loading" />
-                </div>
-
                 <!-- Conto Origine -->
                 <div class="form-group">
                     <label for="conto">Conto *</label>
@@ -82,12 +75,11 @@
                         placeholder="Es: -50.50 o 100.00" required [disabled]="loading" />
                 </div>
 
-                <!-- Descrizione -->
+                <!-- Data Operazione -->
                 <div class="form-group">
-                    <label for="descrizione">Descrizione</label>
-                    <textarea id="descrizione" [(ngModel)]="descrizione" name="descrizione"
-                        placeholder="Es: Spesa alimentari al supermercato" rows="3" required
-                        [disabled]="loading"></textarea>
+                    <label for="data">Data Operazione *</label>
+                    <input id="data" type="date" [(ngModel)]="data_operazione" name="data_operazione" [max]="getTodayDate()" required
+                        [disabled]="loading" />
                 </div>
 
                 <!-- Tag Search -->
@@ -124,6 +116,13 @@
                         }
                     </div>
                     }
+                </div>
+
+                <!-- Descrizione -->
+                <div class="form-group">
+                    <label for="descrizione">Descrizione</label>
+                    <textarea id="descrizione" [(ngModel)]="descrizione" name="descrizione"
+                        placeholder="Es: Spesa alimentari al supermercato" rows="3" required [disabled]="loading"></textarea>
                 </div>
 
             </form>

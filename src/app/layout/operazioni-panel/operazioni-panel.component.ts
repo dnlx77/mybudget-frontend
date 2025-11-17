@@ -7,6 +7,8 @@ import { OperazioneFormComponent } from '../../components/operazione-form/operaz
 import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { ContiListResponse, Conto, ContoService } from '../../services/conto.service';
+import { TagModel, TagService } from '../../services/tag.service';
 
 interface PaginatedResponse {
   success: boolean;
@@ -51,18 +53,101 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
   operazioneEdit: Operazione | null = null;
 
   // Filtri
+  filterAnno: number | null = null;
+  filterMese: number | null = null;
   filterData: string = '';
   filterConto: string = '';
   filterTag: string = '';
 
+  // Dati per i select
+  conti: Conto[] = [];
+  allTags: TagModel[] = [];
+
   private destroy$ = new Subject<void>();
 
-  constructor(private operazioneService: OperazioneService) { }
+  constructor(
+    private operazioneService: OperazioneService,
+    private contoService: ContoService,
+    private tagService: TagService
+  ) { }
 
   ngOnInit(): void {
     console.log('🟢 OperazioniPanel inizializzato');
+
+    // Carica conti e tag
+    this.loadConti();
+    this.loadTags();
+
+    // Inizializza filtri con mese e anno correnti
+    const today = new Date();
+    this.filterAnno = today.getFullYear();
+    this.filterMese = today.getMonth() + 1;  // getMonth() ritorna 0-11
+    
     this.loadOperazioni();
     this.loadStatistiche();  // ← Chiama statistiche
+  }
+
+  loadConti(): void {
+  this.contoService.getConti()
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.conti = response.data;
+        }
+      },
+      error: (error) => console.error('Errore conti:', error)
+    });
+  }
+
+  filteredTags: TagModel[] = [];
+  tagSearchInput: string = '';
+
+
+  loadTags(): void {
+    this.tagService.getTags()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.allTags = response.data;
+            this.filteredTags = this.allTags;
+          }
+        },
+        error: (error) => console.error('Errore tag:', error)
+      });
+  }
+
+  
+onTagSearchInput(value: string): void {
+  this.tagSearchInput = value;
+  
+  if (!value.trim()) {
+    this.filteredTags = this.allTags;
+    return;
+  }
+
+  const searchLower = value.toLowerCase();
+  this.filteredTags = this.allTags.filter(tag =>
+    tag.nome.toLowerCase().includes(searchLower)
+  );
+}
+
+  selectedTagFilter: any = null;
+
+  selectTag(tag: any): void {
+    this.filterTag = tag.id.toString();
+    this.selectedTagFilter = tag;
+    this.tagSearchInput = '';
+    this.filteredTags = this.allTags;
+    this.onFilterChange();
+  }
+
+  clearTagFilter(): void {
+    this.filterTag = '';
+    this.selectedTagFilter = null;
+    this.tagSearchInput = '';
+    this.onFilterChange();
   }
 
   loadOperazioni(): void {
@@ -75,6 +160,8 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
       per_page: this.perPage,
     };
 
+    if (this.filterAnno) params.anno = this.filterAnno;
+    if (this.filterMese) params.mese = this.filterMese;
     if (this.filterData) params.data = this.filterData;
     if (this.filterConto) params.conto_id = this.filterConto;
     if (this.filterTag) params.tag = this.filterTag;
@@ -112,6 +199,8 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
   const params: any = {};
   
   // Applica gli stessi filtri della tabella
+  if (this.filterAnno) params.anno = this.filterAnno;
+  if (this.filterMese) params.mese = this.filterMese;
   if (this.filterData) params.data = this.filterData;
   if (this.filterConto) params.conto_id = this.filterConto;
   if (this.filterTag) params.tag = this.filterTag;
@@ -165,6 +254,27 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
     console.log('✏️ Modifica operazione:', operazione.id);
     this.operazioneEdit = operazione;
     this.isFormOpen = true;
+  }
+
+  deleteOperazione(operazione: Operazione): void {
+    const conferma = confirm(`Sei sicuro di voler eliminare l'operazione del ${operazione.data_operazione}?`);
+    
+    if (!conferma) return;
+
+    console.log('🗑️ Elimina operazione:', operazione.id);
+    
+    this.operazioneService.deleteOperazione(operazione.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log('✅ Operazione eliminata');
+          this.loadOperazioni();  // Ricarica la lista
+        },
+        error: (error) => {
+          console.error('❌ Errore eliminazione:', error);
+          alert('Errore durante l\'eliminazione');
+        }
+      });
   }
 
   closeForm(): void {

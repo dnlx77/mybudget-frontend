@@ -46,6 +46,8 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
   error: string | null = null;
   success: string | null = null;
   isEditMode: boolean = false;
+  loadedTags: boolean = false;
+  loadedConti: boolean = false;
 
   private destroy$ = new Subject<void>();
 
@@ -56,8 +58,12 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    if (!this.loadedConti) {
     this.loadConti();
-    this.loadTags();
+    }
+    if (!this.loadedTags) {
+      this.loadTags();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -84,6 +90,7 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
         next: (response) => {
           if (response.success) {
             this.conti = response.data as Conto[];
+            this.loadedConti = true;
           }
           this.loadingConti = false;
         },
@@ -101,6 +108,7 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
         next: (response) => {
           if (response.success) {
             this.allTags = response.data as TagModel[];
+            this.loadedTags = true; 
           }
           this.loadingTags = false;
         },
@@ -123,7 +131,7 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   resetForm(): void {
-    this.data_operazione = '';
+    this.data_operazione = this.getTodayDate();
     this.importo = null;
     this.descrizione = '';
     this.conto_id = null;
