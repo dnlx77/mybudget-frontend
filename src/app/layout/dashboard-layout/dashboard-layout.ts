@@ -10,7 +10,7 @@ import { OperazioniPanelComponent } from '../operazioni-panel/operazioni-panel.c
   styleUrl: './dashboard-layout.css',
 })
 export class DashboardLayout implements OnInit, OnDestroy {
-  
+
   ngOnInit(): void {
     console.log('Dashboard inizializzato');
   }

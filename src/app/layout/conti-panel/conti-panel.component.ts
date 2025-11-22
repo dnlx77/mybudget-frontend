@@ -47,8 +47,9 @@ export class ContiPanelComponent implements OnInit, OnDestroy {
 
   calculateTotale(): void {
     this.totaleSaldi = this.conti.reduce((total, conto) => {
-      return total + (conto.saldo_totale || 0);
+      return total + (Number(conto.saldo_totale) || 0);
     }, 0);
+    console.log('Totale saldi ==>' + this.totaleSaldi)
   }
 
   ngOnDestroy(): void {

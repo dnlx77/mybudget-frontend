@@ -1,0 +1,58 @@
+<!-- Modal Backdrop -->
+@if (isOpen) {
+<div class="modal-backdrop"></div>
+
+<!-- Modal container-->
+ <div class="modal-container">
+    <!-- Header -->
+    <div class="modal-header">
+        <h2>{{ isEditMode ? 'Modifica conto' : 'Nuovo conto' }}</h2>
+    </div>
+
+    <!-- Boby -->
+    <div class="modal-body">
+        <!-- Messaggio di errore -->
+         @if(error) {
+        <div class="error">{{ error }}</div>
+        }
+
+        <!-- Messaggio di successo -->
+        @if(success) {
+            <div class="success">{{ success }}</div>
+        }
+
+        <!-- Form con input del nome -->
+        <div class="form-group">
+            <label for="nome">Nome conto*</label>
+            <input 
+                id="nome"
+                type="text"
+                [(ngModel)]="nomeConto"
+                name="nome"
+                placeholder="Es: Conto Corrente"
+                [disabled]="loading"
+            />
+        </div>
+    </div>
+
+    <!-- Footer -->
+     <div class="modal-footer">
+        <button class="btn-cancel" (click)="onClose()" [disabled]="loading">
+            Annulla
+        </button>
+        
+        <button class="btn-save" (click)="onSubmit()" [disabled]="loading">
+            @if (loading) {
+            Salvataggio...
+            } @else {
+            @if (isEditMode) {
+            Aggiorna
+            } @else {
+            Crea
+            }
+            }
+        </button>
+     </div>
+ </div>
+}
+

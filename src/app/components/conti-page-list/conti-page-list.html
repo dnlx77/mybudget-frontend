@@ -1,0 +1,50 @@
+<div class="conti-page-list">
+    <!-- Header con bottone "Nuovo Conto" -->
+    <div class="header">
+        <h1>Gestione Conti</h1>
+        <button (click)="openFormNew()">➕ Nuovo Conto</button>
+    </div>
+
+    <!-- Loading -->
+    @if (loading) {
+    <div class="loading">Caricamento...</div>
+    }
+
+    <!-- Errore -->
+    @if (error) {
+    <div class="error">{{ error }}</div>
+    }
+
+    <!-- Lista Conti -->
+    @if (!loading && conti.length > 0) {
+    <table class="conti-table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (conto of conti; track conto.id) {
+            <tr>
+                <td>{{ conto.nome }}</td>
+                <td>
+                    <button class="btn-edit" (click)="editConto(conto)">✏️</button>
+                    <button class="btn-delete" (click)="deleteConto(conto.id)">🗑️</button>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+
+    <!-- Nessun conto -->
+    @if (!loading && conti.length === 0) {
+    <p>Nessun conto trovato</p>
+    }
+
+    <!-- Form Modal Component -->
+    <app-conti-page-form [isOpen]="isFormOpen" [contoEdit]="contoEdit" (close)="closeForm()" (saved)="onContoSaved()">
+    </app-conti-page-form>
+
+</div>
