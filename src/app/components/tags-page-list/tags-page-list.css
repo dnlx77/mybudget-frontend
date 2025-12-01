@@ -1,7 +1,7 @@
 /* ============================================================
    CONTAINER PRINCIPALE
    ============================================================ */
-.conti-page-list {
+.tags-page-list {
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -71,20 +71,20 @@
 }
 
 /* ============================================================
-   TABELLA CONTI
+   TABELLA tags
    ============================================================ */
-.conti-table {
+.tags-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
 }
 
-.conti-table thead {
+.tags-table thead {
     background: #f8f9fa;
     border-bottom: 2px solid #e5e7eb;
 }
 
-.conti-table th {
+.tags-table th {
     padding: 0.75rem;
     text-align: left;
     font-weight: 700;
@@ -94,24 +94,24 @@
     letter-spacing: 0.5px;
 }
 
-.conti-table th:last-child {
-    text-align: right; /* Allinea "Azioni" a destra */
-}
-
-.conti-table tbody tr {
+.tags-table tbody tr {
     border-bottom: 1px solid #f0f0f0;
     transition: background 0.2s ease;
 }
 
-.conti-table tbody tr:hover {
+.tags-table th:last-child {
+    text-align: right; /* Allinea "Azioni" a destra */
+}
+
+.tags-table tbody tr:hover {
     background: #f8f9fa;
 }
 
-.conti-table td {
+.tags-table td {
     padding: 0.75rem;
 }
 
-.conti-table td:last-child {
+.tags-table td:last-child {
     text-align: right; /* Allinea i bottoni a destra */
 }
 
@@ -151,7 +151,7 @@
    RESPONSIVE
    ============================================================ */
 @media (max-width: 768px) {
-    .conti-page-list {
+    .tags-page-list {
         padding: 1rem;
     }
 
@@ -165,12 +165,12 @@
         width: 100%;
     }
 
-    .conti-table {
+    .tags-table {
         font-size: 0.7rem;
     }
 
-    .conti-table th,
-    .conti-table td {
+    .tags-table th,
+    .tags-table td {
         padding: 0.5rem;
     }
 }

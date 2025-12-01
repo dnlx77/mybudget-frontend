@@ -7,6 +7,7 @@ import { TagService, TagModel } from '../../services/tag.service';
 import { OperazioneService } from '../../services/operazione.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { EventService } from '../../services/event';
 
 @Component({
   selector: 'app-operazione-form',
@@ -54,7 +55,8 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
   constructor(
     private contoService: ContoService,
     private tagService: TagService,
-    private operazioneService: OperazioneService
+    private operazioneService: OperazioneService,
+    private eventService: EventService
   ) { }
 
   ngOnInit(): void {
@@ -220,6 +222,7 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
           setTimeout(() => {
             this.onClose();
             this.saved.emit();
+            this.eventService.notifyOperazioneChanged();
           }, 1000);
         },
         error: (error) => {

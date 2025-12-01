@@ -1,0 +1,50 @@
+<div class="tags-page-list">
+    <!-- Header con bottone "Nuovo Tag" -->
+    <div class="header">
+        <h1>Gestione Tags</h1>
+        <button (click)="openFormNew()">➕ Nuovo Tag</button>
+    </div>
+
+    <!-- Loading -->
+    @if (loading) {
+    <div class="loading">Caricamento...</div>
+    }
+
+    <!-- Errore -->
+    @if (error) {
+    <div class="error">{{ error }}</div>
+    }
+
+    <!-- Lista Conti -->
+    @if (!loading && tags.length > 0) {
+    <table class="tags-table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (tag of tags; track tag.id) {
+            <tr>
+                <td>{{ tag.nome }}</td>
+                <td>
+                    <button class="btn-edit" (click)="editTag(tag)">✏️</button>
+                    <button class="btn-delete" (click)="deleteTag(tag.id)">🗑️</button>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+
+    <!-- Nessun tag -->
+    @if (!loading && tags.length === 0) {
+    <p>Nessun tag trovato</p>
+    }
+
+    <!-- Form Modal Component -->
+    <app-tags-page-form [isOpen]="isFormOpen" [tagEdit]="tagEdit" (close)="closeForm()" (saved)="onTagSaved()">
+    </app-tags-page-form>
+
+</div>

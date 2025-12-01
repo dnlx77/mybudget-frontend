@@ -4,6 +4,7 @@ import { ContoService, Conto } from '../../services/conto.service';
 import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { EventService } from '../../services/event';
 
 @Component({
   selector: 'app-conti-panel',
@@ -20,10 +21,20 @@ export class ContiPanelComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private contoService: ContoService) { }
+  constructor(
+    private contoService: ContoService,
+    private eventService: EventService
+  ) { }
 
   ngOnInit(): void {
     this.loadConti();
+
+    // Quando un'operazione cambia, ricarica i conti
+    this.eventService.operazioneChanged$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => {
+      this.loadConti();
+    });
   }
 
   loadConti(): void {

@@ -328,6 +328,7 @@ export class OperazioniPanelComponent implements OnInit, OnDestroy {
     console.log('💾 Operazione salvata, ricarica lista');
     this.currentPage = 1;
     this.loadOperazioni();
+    this.loadStatistiche();
     this.closeForm();
   }
 }
