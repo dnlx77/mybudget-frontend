@@ -41,9 +41,9 @@
             <div class="form-group">
                 <label for="conto">Conto</label>
                 <select id="conto" [(ngModel)]="filtri.conto_id" class="form-control">
-                    <option [value]="null">Tutti i conti</option>
+                    <option [ngValue]="null">Tutti i conti</option>
                     @for (conto of conti; track conto.id) {
-                        <option [ngValue]="conto.id">{{ conto.nome }}</option>
+                    <option [ngValue]="conto.id">{{ conto.nome }}</option>
                     }
                 </select>
             </div>
@@ -71,7 +71,7 @@
     @if (error && !loading) {
     <div class="error-section">
         <p>❌ {{ error }}</p>
-        <button class="btn-secondary" (click)="loadSpesePerTag()">
+        <button class="btn-secondary" (click)="applicaFiltri()">
             🔄 Riprova
         </button>
     </div>
@@ -95,30 +95,114 @@
     <!-- Grid Grafici -->
     <div class="charts-grid">
 
-        <!-- Grafico Spese per Tag -->
+        <!-- GRAFICO 1: Spese per Tag (Donut) -->
         <div class="chart-card">
-            <div echarts [options]="pieChartOption" [autoResize]="true" class="chart-container">
+            <div class="chart-title">
+                <h3>Spese per Categoria</h3>
+                <p>Top 10 + Altri</p>
             </div>
+            <div echarts [options]="pieChartOption" [autoResize]="true" class="chart-container"></div>
+            @if (totaleGenerale > 0) {
+            <div class="chart-stats">
+                <div class="stat">
+                    <span class="stat-label">Totale Spese:</span>
+                    <span class="stat-value">€{{ totaleGenerale | number:'1.2-2' }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Categorie:</span>
+                    <span class="stat-value">{{ numeroGiorni }} giorni</span>
+                </div>
+            </div>
+            }
         </div>
 
-        <!-- Placeholder grafici futuri -->
-        <div class="chart-card placeholder">
+        <!-- GRAFICO 2: Guadagni vs Spese (Barre) -->
+        <div class="chart-card">
+            <div class="chart-title">
+                <h3>Guadagni vs Spese</h3>
+                <p>Confronto mensile</p>
+            </div>
+            @if (guadagniVsSpeseData.length > 0) {
+            <div echarts [options]="barChartOption" [autoResize]="true" class="chart-container"></div>
+            @if (guadagniVsSpeseStat) {
+            <div class="chart-stats">
+                <div class="stat">
+                    <span class="stat-label">Guadagni:</span>
+                    <span class="stat-value positive">€{{ guadagniVsSpeseStat.totale_guadagni | number:'1.2-2' }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Spese:</span>
+                    <span class="stat-value negative">€{{ guadagniVsSpeseStat.totale_spese | number:'1.2-2' }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Saldo Netto:</span>
+                    <span class="stat-value" [class.positive]="guadagniVsSpeseStat.saldo_netto > 0"
+                        [class.negative]="guadagniVsSpeseStat.saldo_netto < 0">
+                        €{{ guadagniVsSpeseStat.saldo_netto | number:'1.2-2' }}
+                    </span>
+                </div>
+            </div>
+            }
+            } @else {
             <div class="placeholder-content">
                 <span class="placeholder-icon">📊</span>
                 <p class="placeholder-title">Guadagni vs Spese</p>
-                <small class="placeholder-subtitle">Prossimamente</small>
+                <small class="placeholder-subtitle">Nessun dato disponibile</small>
             </div>
+            }
         </div>
 
+        <!-- GRAFICO 3: Andamento Saldo (Linea) -->
+        @if (filtri.conto_id) {
+        <div class="chart-card">
+            <div class="chart-title">
+                <h3>Andamento Saldo</h3>
+                <p>Evoluzione giornaliera</p>
+            </div>
+            @if (andamentoSaldoData.length > 0) {
+            <div echarts [options]="lineChartOption" [autoResize]="true" class="chart-container"></div>
+            @if (andamentoSaldoStat) {
+            <div class="chart-stats">
+                <div class="stat">
+                    <span class="stat-label">Saldo Inizio:</span>
+                    <span class="stat-value">€{{ andamentoSaldoStat.saldo_iniziale | number:'1.2-2' }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Saldo Fine:</span>
+                    <span class="stat-value" [class.positive]="andamentoSaldoStat.saldo_finale > 0"
+                        [class.negative]="andamentoSaldoStat.saldo_finale < 0">
+                        €{{ andamentoSaldoStat.saldo_finale | number:'1.2-2' }}
+                    </span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Variazione:</span>
+                    <span class="stat-value" [class.positive]="andamentoSaldoStat.variazione > 0"
+                        [class.negative]="andamentoSaldoStat.variazione < 0">
+                        €{{ andamentoSaldoStat.variazione | number:'1.2-2' }}
+                    </span>
+                </div>
+            </div>
+            }
+            } @else {
+            <div class="placeholder-content">
+                <span class="placeholder-icon">📈</span>
+                <p class="placeholder-title">Andamento Saldo</p>
+                <small class="placeholder-subtitle">Nessun dato disponibile</small>
+            </div>
+            }
+        </div>
+        } @else {
         <div class="chart-card placeholder">
             <div class="placeholder-content">
                 <span class="placeholder-icon">📈</span>
                 <p class="placeholder-title">Andamento Saldo</p>
-                <small class="placeholder-subtitle">Prossimamente</small>
+                <small class="placeholder-subtitle">Seleziona un conto per visualizzare</small>
             </div>
         </div>
+        }
 
     </div>
+
     }
 
 </div>

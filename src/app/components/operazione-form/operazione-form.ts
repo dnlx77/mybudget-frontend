@@ -124,7 +124,7 @@ export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
   populateForm(): void {
     if (this.operazioneEdit) {
       this.data_operazione = this.operazioneEdit.data_operazione;
-      this.importo = this.operazioneEdit.importo;
+      this.importo = this.operazioneEdit.importo ? parseFloat(String(this.operazioneEdit.importo)) : null;
       this.descrizione = this.operazioneEdit.descrizione;
       this.conto_id = this.operazioneEdit.conto_id;
       this.selectedTags = this.operazioneEdit.tags || [];
