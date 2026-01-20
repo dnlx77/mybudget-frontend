@@ -41,6 +41,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.95rem;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
 .header button:hover {
@@ -49,7 +50,7 @@
 }
 
 /* ============================================================
-   ALERT
+   ALERT & LOADING
    ============================================================ */
 .error {
     background-color: #fee;
@@ -60,14 +61,12 @@
     font-size: 0.9rem;
 }
 
-/* ============================================================
-   LOADING
-   ============================================================ */
 .loading {
     text-align: center;
     padding: 3rem 1rem;
-    color: #999;
+    color: #666;
     font-size: 1rem;
+    font-weight: 500;
 }
 
 /* ============================================================
@@ -75,66 +74,79 @@
    ============================================================ */
 .conti-table {
     width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .conti-table thead {
     background: #f8f9fa;
-    border-bottom: 2px solid #e5e7eb;
 }
 
 .conti-table th {
-    padding: 0.75rem;
+    padding: 1rem;
     text-align: left;
     font-weight: 700;
-    color: #333;
+    color: #555;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.5px;
+    border-bottom: 2px solid #e5e7eb;
 }
 
 .conti-table th:last-child {
-    text-align: right; /* Allinea "Azioni" a destra */
+    text-align: right;
+    padding-right: 1.5rem;
 }
 
 .conti-table tbody tr {
-    border-bottom: 1px solid #f0f0f0;
     transition: background 0.2s ease;
 }
 
 .conti-table tbody tr:hover {
-    background: #f8f9fa;
+    background: #fcfcfc;
 }
 
 .conti-table td {
-    padding: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+    font-size: 0.95rem;
 }
 
 .conti-table td:last-child {
-    text-align: right; /* Allinea i bottoni a destra */
+    text-align: right;
 }
 
 /* Azioni */
 .azioni {
     display: flex;
-    gap: 0.5rem;
-    justify-content: center;
+    gap: 0.8rem;
+    justify-content: flex-end;
+    align-items: center;
 }
 
 .btn-edit,
 .btn-delete {
-    background: none;
+    background: transparent;
     border: none;
-    font-size: 1rem;
+    font-size: 1.1rem;
     cursor: pointer;
-    padding: 0.25rem;
-    transition: transform 0.2s ease;
+    padding: 6px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.btn-edit:hover,
+.btn-edit:hover {
+    background-color: #e0e7ff;
+    transform: scale(1.1);
+}
+
 .btn-delete:hover {
-    transform: scale(1.2);
+    background-color: #fee;
+    transform: scale(1.1);
 }
 
 /* ============================================================
@@ -142,9 +154,22 @@
    ============================================================ */
 .no-data {
     text-align: center;
-    padding: 3rem 1rem;
+    padding: 4rem 1rem;
     color: #999;
-    font-size: 1rem;
+    border: 2px dashed #eee;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.no-data p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: #555;
+}
+
+.no-data small {
+    color: #888;
 }
 
 /* ============================================================
@@ -153,24 +178,23 @@
 @media (max-width: 768px) {
     .conti-page-list {
         padding: 1rem;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .header {
         flex-direction: column;
         gap: 1rem;
-        align-items: flex-start;
+        align-items: stretch;
+        text-align: center;
     }
 
     .header button {
         width: 100%;
     }
 
-    .conti-table {
-        font-size: 0.7rem;
-    }
-
     .conti-table th,
     .conti-table td {
-        padding: 0.5rem;
+        padding: 0.75rem 0.5rem;
     }
 }

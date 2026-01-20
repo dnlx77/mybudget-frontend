@@ -403,3 +403,57 @@
     background: #ddd;
     border-radius: 3px;
 }
+
+/* Layout a griglia per mettere Importo e Data sulla stessa riga */
+.form-row-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Stile per il blocco Trasferimento (opzionale) */
+.transfer-group {
+    background-color: #f8fafc;
+    /* Grigio chiarissimo */
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    margin-bottom: 1.5rem;
+}
+
+.badge-optional {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: normal;
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+/* Messaggi di errore sotto i campi */
+.error-text {
+    color: #c33;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
+}
+
+/* Responsive per la griglia */
+@media (max-width: 600px) {
+    .form-row-split {
+        grid-template-columns: 1fr;
+        /* Torna a colonna singola su mobile */
+    }
+}
+
+.tag-suggestion-item:focus {
+    background-color: #e0e7ff;
+    /* Colore simile all'hover */
+    outline: none;
+    /* Rimuovi il bordo blu standard del browser */
+    border-left: 3px solid #667eea;
+    /* Indicatore visivo carino */
+    padding-left: 9px;
+    /* Compensa il bordo per non spostare il testo */
+}

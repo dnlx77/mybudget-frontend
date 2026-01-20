@@ -1,208 +1,153 @@
 <div class="grafici-container">
 
-    <!-- HEADER -->
     <div class="page-header">
         <h1>📊 Analisi Finanziaria</h1>
-        <p class="subtitle">Visualizza le tue spese per categoria con filtri personalizzabili</p>
+        <p class="subtitle">Analizza l'andamento delle tue finanze</p>
     </div>
 
-    <!-- FILTRI -->
     <div class="filtri-section">
-        <h2>Filtri Periodo</h2>
 
-        <!-- Pulsanti rapidi -->
         <div class="quick-filters">
-            <button class="btn-quick" (click)="impostaPeriodo('ultimi7')">
-                📅 Ultimi 7 giorni
-            </button>
-            <button class="btn-quick" (click)="impostaPeriodo('ultimi30')">
-                📅 Ultimi 30 giorni
-            </button>
-            <button class="btn-quick" (click)="impostaPeriodo('questoMese')">
-                📅 Questo mese
-            </button>
-            <button class="btn-quick" (click)="impostaPeriodo('questoAnno')">
-                📅 Quest'anno
-            </button>
+            <button class="btn-quick" (click)="impostaPeriodo('ultimi7')">📅 7 Giorni</button>
+            <button class="btn-quick" (click)="impostaPeriodo('ultimi30')">📅 30 Giorni</button>
+            <button class="btn-quick" (click)="impostaPeriodo('questoMese')">📅 Questo Mese</button>
+            <button class="btn-quick" (click)="impostaPeriodo('questoAnno')">📅 Quest'Anno</button>
         </div>
 
-        <!-- Filtri personalizzati -->
         <div class="custom-filters">
             <div class="form-group">
-                <label for="data-inizio">Data Inizio</label>
-                <input type="date" id="data-inizio" [(ngModel)]="filtri.data_inizio" class="form-control" />
+                <label>Data Inizio</label>
+                <input type="date" [ngModel]="dataInizio()" (ngModelChange)="dataInizio.set($event)"
+                    class="form-control" />
             </div>
 
             <div class="form-group">
-                <label for="data-fine">Data Fine</label>
-                <input type="date" id="data-fine" [(ngModel)]="filtri.data_fine" class="form-control" />
+                <label>Data Fine</label>
+                <input type="date" [ngModel]="dataFine()" (ngModelChange)="dataFine.set($event)" class="form-control" />
             </div>
 
             <div class="form-group">
-                <label for="conto">Conto</label>
-                <select id="conto" [(ngModel)]="filtri.conto_id" class="form-control">
-                    <option [ngValue]="null">Tutti i conti</option>
-                    @for (conto of conti; track conto.id) {
+                <label>Conto</label>
+                <select [ngModel]="contoId()" (ngModelChange)="contoId.set($event)" class="form-control">
+                    <option [ngValue]="null">Tutti i conti (Patrimonio Totale)</option>
+                    @for (conto of conti(); track conto.id) {
                     <option [ngValue]="conto.id">{{ conto.nome }}</option>
                     }
                 </select>
             </div>
 
             <div class="form-actions">
-                <button class="btn-primary" (click)="applicaFiltri()">
-                    🔍 Applica Filtri
-                </button>
-                <button class="btn-secondary" (click)="resetFiltri()">
-                    🔄 Reset
-                </button>
+                <button class="btn-secondary" (click)="resetFiltri()">🔄 Reset</button>
             </div>
         </div>
     </div>
 
-    <!-- LOADING STATE -->
-    @if (loading) {
+    @if (loading()) {
     <div class="loading-section">
         <div class="spinner"></div>
-        <p>Caricamento grafici in corso...</p>
+        <p>Analisi in corso...</p>
     </div>
     }
 
-    <!-- ERROR STATE -->
-    @if (error && !loading) {
-    <div class="error-section">
-        <p>❌ {{ error }}</p>
-        <button class="btn-secondary" (click)="applicaFiltri()">
-            🔄 Riprova
-        </button>
-    </div>
-    }
+    @if (!loading()) {
 
-    <!-- GRAFICI -->
-    @if (!loading && !error) {
-
-    <!-- Info Periodo -->
     <div class="info-section">
         <div class="info-card">
-            <span class="info-label">Periodo:</span>
-            <span class="info-value">{{ periodoVisualizzato }}</span>
+            <span class="info-label">Periodo Analizzato</span>
+            <span class="info-value">{{ statsSpeseTag().periodo }}</span>
         </div>
         <div class="info-card">
-            <span class="info-label">Totale Spese:</span>
-            <span class="info-value totale">€{{ totaleGenerale | number:'1.2-2' }}</span>
+            <span class="info-label">Totale Uscite</span>
+            <span class="info-value totale">€{{ statsSpeseTag().totale | number:'1.2-2' }}</span>
         </div>
     </div>
+    }
 
-    <!-- Grid Grafici -->
     <div class="charts-grid">
 
-        <!-- GRAFICO 1: Spese per Tag (Donut) -->
         <div class="chart-card">
             <div class="chart-title">
                 <h3>Spese per Categoria</h3>
-                <p>Top 10 + Altri</p>
             </div>
-            <div echarts [options]="pieChartOption" [autoResize]="true" class="chart-container"></div>
-            @if (totaleGenerale > 0) {
+
+            @if (statsSpeseTag().totale > 0) {
+            <div echarts [options]="pieChartOption()" [autoResize]="true" class="chart-container"></div>
+
             <div class="chart-stats">
                 <div class="stat">
-                    <span class="stat-label">Totale Spese:</span>
-                    <span class="stat-value">€{{ totaleGenerale | number:'1.2-2' }}</span>
+                    <span class="stat-label">Totale</span>
+                    <span class="stat-value">€{{ statsSpeseTag().totale | number:'1.0-0' }}</span>
                 </div>
-                <div class="stat">
-                    <span class="stat-label">Categorie:</span>
-                    <span class="stat-value">{{ numeroGiorni }} giorni</span>
-                </div>
+            </div>
+            } @else {
+            <div class="placeholder-content">
+                <span class="placeholder-icon">📉</span>
+                <p class="placeholder-subtitle">Nessuna spesa nel periodo</p>
             </div>
             }
         </div>
 
-        <!-- GRAFICO 2: Guadagni vs Spese (Barre) -->
         <div class="chart-card">
             <div class="chart-title">
-                <h3>Guadagni vs Spese</h3>
-                <p>Confronto mensile</p>
+                <h3>Entrate vs Uscite</h3>
             </div>
-            @if (guadagniVsSpeseData.length > 0) {
-            <div echarts [options]="barChartOption" [autoResize]="true" class="chart-container"></div>
-            @if (guadagniVsSpeseStat) {
+
+            @if (statsGuadagniVsSpese(); as stats) {
+            <div echarts [options]="barChartOption()" [autoResize]="true" class="chart-container"></div>
+
             <div class="chart-stats">
                 <div class="stat">
-                    <span class="stat-label">Guadagni:</span>
-                    <span class="stat-value positive">€{{ guadagniVsSpeseStat.totale_guadagni | number:'1.2-2' }}</span>
+                    <span class="stat-label">Entrate</span>
+                    <span class="stat-value positive">€{{ stats.totale_guadagni | number:'1.0-0' }}</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-label">Spese:</span>
-                    <span class="stat-value negative">€{{ guadagniVsSpeseStat.totale_spese | number:'1.2-2' }}</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Saldo Netto:</span>
-                    <span class="stat-value" [class.positive]="guadagniVsSpeseStat.saldo_netto > 0"
-                        [class.negative]="guadagniVsSpeseStat.saldo_netto < 0">
-                        €{{ guadagniVsSpeseStat.saldo_netto | number:'1.2-2' }}
+                    <span class="stat-label">Saldo</span>
+                    <span class="stat-value" [class.positive]="stats.saldo_netto > 0"
+                        [class.negative]="stats.saldo_netto < 0">
+                        €{{ stats.saldo_netto | number:'1.0-0' }}
                     </span>
                 </div>
             </div>
-            }
             } @else {
             <div class="placeholder-content">
                 <span class="placeholder-icon">📊</span>
-                <p class="placeholder-title">Guadagni vs Spese</p>
-                <small class="placeholder-subtitle">Nessun dato disponibile</small>
+                <p class="placeholder-subtitle">Dati insufficienti</p>
             </div>
             }
         </div>
 
-        <!-- GRAFICO 3: Andamento Saldo (Linea) -->
-        @if (filtri.conto_id) {
         <div class="chart-card">
             <div class="chart-title">
-                <h3>Andamento Saldo</h3>
-                <p>Evoluzione giornaliera</p>
+                <h3>{{ contoId() ? 'Andamento Saldo Conto' : 'Patrimonio Totale' }}</h3>
             </div>
-            @if (andamentoSaldoData.length > 0) {
-            <div echarts [options]="lineChartOption" [autoResize]="true" class="chart-container"></div>
-            @if (andamentoSaldoStat) {
+
+            @if (statsAndamento(); as stats) {
+            <div echarts [options]="lineChartOption()" [autoResize]="true" class="chart-container"></div>
+
             <div class="chart-stats">
                 <div class="stat">
-                    <span class="stat-label">Saldo Inizio:</span>
-                    <span class="stat-value">€{{ andamentoSaldoStat.saldo_iniziale | number:'1.2-2' }}</span>
+                    <span class="stat-label">Inizio</span>
+                    <span class="stat-value">€{{ stats.saldo_iniziale | number:'1.0-0' }}</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-label">Saldo Fine:</span>
-                    <span class="stat-value" [class.positive]="andamentoSaldoStat.saldo_finale > 0"
-                        [class.negative]="andamentoSaldoStat.saldo_finale < 0">
-                        €{{ andamentoSaldoStat.saldo_finale | number:'1.2-2' }}
-                    </span>
+                    <span class="stat-label">Fine</span>
+                    <span class="stat-value">€{{ stats.saldo_finale | number:'1.0-0' }}</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-label">Variazione:</span>
-                    <span class="stat-value" [class.positive]="andamentoSaldoStat.variazione > 0"
-                        [class.negative]="andamentoSaldoStat.variazione < 0">
-                        €{{ andamentoSaldoStat.variazione | number:'1.2-2' }}
+                    <span class="stat-label">Variazione</span>
+                    <span class="stat-value" [class.positive]="stats.variazione > 0"
+                        [class.negative]="stats.variazione < 0">
+                        €{{ stats.variazione | number:'1.0-0' }}
                     </span>
                 </div>
             </div>
-            }
             } @else {
             <div class="placeholder-content">
                 <span class="placeholder-icon">📈</span>
-                <p class="placeholder-title">Andamento Saldo</p>
-                <small class="placeholder-subtitle">Nessun dato disponibile</small>
+                <p class="placeholder-subtitle">Nessun dato nel periodo</p>
             </div>
             }
         </div>
-        } @else {
-        <div class="chart-card placeholder">
-            <div class="placeholder-content">
-                <span class="placeholder-icon">📈</span>
-                <p class="placeholder-title">Andamento Saldo</p>
-                <small class="placeholder-subtitle">Seleziona un conto per visualizzare</small>
-            </div>
-        </div>
-        }
 
     </div>
-
-    }
-
 </div>

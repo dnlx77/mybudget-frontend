@@ -1,334 +1,251 @@
-import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OperazioneService, Operazione } from '../../services/operazione.service';
+import { Subject, combineLatest, debounceTime, distinctUntilChanged, switchMap, tap, catchError, of, forkJoin } from 'rxjs';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+
+// Services & Models
+import { OperazioneService, Operazione, FiltriOperazioni } from '../../services/operazione.service';
 import { ContoService, Conto } from '../../services/conto.service';
 import { TagService, TagModel } from '../../services/tag.service';
+import { EventService } from '../../services/event';
+
+// Components & Pipes
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { OperazioneFormComponent } from '../../components/operazione-form/operazione-form';
 import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-
-interface PaginatedResponse {
-  success: boolean;
-  data: Operazione[];
-  pagination: {
-    current_page: number;
-    total_pages?: number;
-    last_page: number;
-    total: number;
-    per_page: number;
-  };
-  message: string;
-}
 
 @Component({
   selector: 'app-operazioni-panel',
   standalone: true,
   imports: [CommonModule, FormsModule, PaginationComponent, OperazioneFormComponent, CurrencyEuroPipe],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './operazioni-panel.html',
   styleUrl: './operazioni-panel.css',
 })
-export class OperazioniPanelComponent implements OnInit, OnDestroy {
+export class OperazioniPanelComponent implements OnInit {
   
-  // ============================================================
-  // DATI OPERAZIONI
-  // ============================================================
-  operazioni: Operazione[] = [];
+  // INJECT SERVICES
+  private operazioneService = inject(OperazioneService);
+  private contoService = inject(ContoService);
+  private tagService = inject(TagService);
+  private eventService = inject(EventService);
 
   // ============================================================
-  // STATISTICHE
+  // STATO (SIGNALS)
   // ============================================================
-  guadagno: number = 0;
-  spese: number = 0;
-  saldo: number = 0;
+  
+  // Filtri
+  currentPage = signal(1);
+  filterAnno = signal<number>(new Date().getFullYear());
+  filterMese = signal<number>(new Date().getMonth() + 1);
+  filterConto = signal<string>('');
+  filterTag = signal<string>('');
+  filterData = signal<string>('');
+  
+  // UI State
+  isLoading = signal(false);
+  error = signal<string | null>(null);
+  
+  // Dati
+  operazioni = signal<Operazione[]>([]);
+  statistiche = signal({ guadagno: 0, spese: 0, saldo: 0 });
+  conti = signal<Conto[]>([]);
+  tags = signal<TagModel[]>([]);
 
-  // ============================================================
-  // PAGINAZIONE
-  // ============================================================
-  currentPage: number = 1;
-  totalPages: number = 1;
-  totalCount: number = 0;
-  perPage: number = 50;
+  // Paginazione response
+  paginationState = signal({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: 50
+  });
 
-  // ============================================================
-  // FORM MODAL
-  // ============================================================
-  isFormOpen: boolean = false;
+  // Gestione Tag Search
+  tagSearchInput = signal('');
+  selectedTagFilter = signal<TagModel | null>(null);
+
+  // Computed Signal: Filtra i tag in memoria mentre scrivi
+  filteredTags = computed(() => {
+    const term = this.tagSearchInput().toLowerCase();
+    const all = this.tags();
+    if (!term) return all;
+    return all.filter(t => t.nome.toLowerCase().includes(term));
+  });
+
+  // Gestione Form Modale (Variabili semplici per UI)
+  isFormOpen = false;
   operazioneEdit: Operazione | null = null;
 
-  // ============================================================
-  // FILTRI
-  // ============================================================
-  filterAnno: number | null = null;
-  filterMese: number | null = null;
-  filterData: string = '';
-  filterConto: string = '';
-  filterTag: string = '';
+  // Trigger manuale per ricaricare (es. dopo delete)
+  private loadTrigger$ = new Subject<void>();
 
-  // ============================================================
-  // SELECT CONTI E TAG
-  // ============================================================
-  conti: Conto[] = [];
-  allTags: TagModel[] = [];
-  filteredTags: TagModel[] = [];
-  selectedTagFilter: TagModel | null = null;
-  tagSearchInput: string = '';
+  constructor() {
+    // ============================================================
+    // PIPELINE REATTIVA PRINCIPALE
+    // ============================================================
+    // Ascolta tutti i signal dei filtri + il trigger manuale
+    combineLatest([
+      toObservable(this.currentPage),
+      toObservable(this.filterAnno),
+      toObservable(this.filterMese),
+      toObservable(this.filterConto),
+      toObservable(this.filterTag),
+      toObservable(this.filterData),
+      this.loadTrigger$.pipe(debounceTime(0)) // Trick per includere il trigger nello stream
+    ]).pipe(
+      debounceTime(200), // Evita doppio refresh se cambi filtri velocemente
+      // distinctUntilChanged non usato sull'array intero per permettere il reload forzato
+      tap(() => {
+        this.isLoading.set(true);
+        this.error.set(null);
+      }),
+      switchMap(([page, anno, mese, conto, tag, data]) => {
+        
+        // Costruzione filtri per API
+        const filters: FiltriOperazioni = {
+          page,
+          per_page: this.paginationState().per_page,
+          anno: anno || undefined,
+          mese: mese || undefined,
+          conto_id: conto || undefined,
+          tag: tag || undefined,
+          data: data || undefined
+        };
 
-  // ============================================================
-  // STATE
-  // ============================================================
-  loading: boolean = true;
-  error: string | null = null;
+        // Chiamata parallela: Operazioni + Statistiche
+        return forkJoin({
+          ops: this.operazioneService.getOperazioni(filters),
+          stats: this.operazioneService.getStatistiche(filters)
+        }).pipe(
+          catchError(err => {
+            console.error('Errore API:', err);
+            this.error.set("Impossibile caricare i dati. Riprova più tardi.");
+            this.isLoading.set(false);
+            return of(null);
+          })
+        );
+      }),
+      takeUntilDestroyed() // Cleanup automatico Angular
+    ).subscribe(result => {
+      this.isLoading.set(false);
+      
+      if (result) {
+        // Aggiorna Dati Operazioni
+        this.operazioni.set(result.ops.data);
+        
+        // Aggiorna Paginazione
+        this.paginationState.set({
+          current_page: result.ops.pagination.current_page,
+          last_page: result.ops.pagination.last_page,
+          total: result.ops.pagination.total,
+          per_page: result.ops.pagination.per_page
+        });
 
-  // ============================================================
-  // PRIVATE
-  // ============================================================
-  private destroy$ = new Subject<void>();
-
-  constructor(
-    private operazioneService: OperazioneService,
-    private contoService: ContoService,
-    private tagService: TagService
-  ) { }
-
-  // ============================================================
-  // LIFECYCLE HOOKS
-  // ============================================================
+        // Aggiorna Statistiche Totali
+        if (result.stats.success) {
+          this.statistiche.set(result.stats.data);
+        }
+      }
+    });
+  }
 
   ngOnInit(): void {
-    console.log('🟢 OperazioniPanel inizializzato');
-
-    // Carica conti e tag
-    this.loadConti();
-    this.loadTags();
-
-    // Inizializza filtri con mese e anno correnti
-    const today = new Date();
-    this.filterAnno = today.getFullYear();
-    this.filterMese = today.getMonth() + 1;
-
-    // Carica operazioni e statistiche
-    this.loadOperazioni();
-    this.loadStatistiche();
+    // Caricamento dati ausiliari
+    this.loadAuxData();
+    // Start iniziale
+    this.loadTrigger$.next(); 
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  loadAuxData() {
+    this.contoService.getConti().subscribe(res => {
+      if (res.success) this.conti.set(res.data);
+    });
+    this.tagService.getTags().subscribe(res => {
+      if (res.success) this.tags.set(res.data);
+    });
   }
 
   // ============================================================
-  // PUBLIC METHODS - CARICAMENTO DATI
+  // AZIONI UTENTE (Aggiornano i Signal -> Triggerano Pipeline)
   // ============================================================
 
-  loadOperazioni(): void {
-    console.log('📥 loadOperazioni - Pagina:', this.currentPage);
-    this.loading = true;
-    this.error = null;
-    
-    const params: any = {
-      page: this.currentPage,
-      per_page: this.perPage,
-    };
-
-    if (this.filterAnno) params.anno = this.filterAnno;
-    if (this.filterMese) params.mese = this.filterMese;
-    if (this.filterData) params.data = this.filterData;
-    if (this.filterConto) params.conto_id = this.filterConto;
-    if (this.filterTag) params.tag = this.filterTag;
-
-    console.log('🔄 Richiesta API con params:', params);
-
-    this.operazioneService.getOperazioni(params)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response: PaginatedResponse) => {
-          console.log('✅ Risposta ricevuta:', response);
-          
-          if (response.success) {
-            this.operazioni = response.data as Operazione[];
-            this.totalPages = response.pagination?.last_page || 1;
-            this.totalCount = response.pagination?.total || 0;
-            this.currentPage = response.pagination?.current_page || 1;
-            
-            console.log('📄 Pagina:', this.currentPage, 'di', this.totalPages);
-            console.log('📋 Operazioni caricate:', this.operazioni.length);
-            console.log('📊 Totale nel DB:', this.totalCount);
-          }
-          
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('❌ Errore API:', error);
-          this.error = 'Errore nel caricamento delle operazioni';
-          this.loading = false;
-        }
-      });
+  setFilterAnno(val: number) {
+    this.currentPage.set(1); // Reset pagina importante
+    this.filterAnno.set(val);
   }
 
-  loadStatistiche(): void {
-    const params: any = {};
-    
-    if (this.filterAnno) params.anno = this.filterAnno;
-    if (this.filterMese) params.mese = this.filterMese;
-    if (this.filterData) params.data = this.filterData;
-    if (this.filterConto) params.conto_id = this.filterConto;
-    if (this.filterTag) params.tag = this.filterTag;
-
-    this.operazioneService.getStatistiche(params)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.guadagno = response.data.guadagno;
-            this.spese = response.data.spese;
-            this.saldo = response.data.saldo;
-            console.log('📊 Statistiche totali:', response.data);
-          }
-        },
-        error: (error) => console.error('Errore statistiche:', error)
-      });
+  setFilterMese(val: number) {
+    this.currentPage.set(1);
+    this.filterMese.set(val);
   }
 
-  loadConti(): void {
-    this.contoService.getConti()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.conti = response.data;
-          }
-        },
-        error: (error) => console.error('Errore conti:', error)
-      });
+  // Metodo generico per input
+  updateFilter(type: 'data' | 'conto', val: any) {
+    this.currentPage.set(1);
+    if (type === 'data') this.filterData.set(val);
+    if (type === 'conto') this.filterConto.set(val);
   }
 
-  loadTags(): void {
-    this.tagService.getTags()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.allTags = response.data;
-            this.filteredTags = this.allTags;
-          }
-        },
-        error: (error) => console.error('Errore tag:', error)
-      });
+  // Gestione Tag Select
+  selectTag(tag: TagModel) {
+    this.selectedTagFilter.set(tag);
+    this.currentPage.set(1);
+    this.filterTag.set(tag.id.toString());
+    this.tagSearchInput.set(''); 
   }
 
-  // ============================================================
-  // PUBLIC METHODS - PAGINAZIONE
-  // ============================================================
+  clearTagFilter() {
+    this.selectedTagFilter.set(null);
+    this.currentPage.set(1);
+    this.filterTag.set('');
+  }
 
-  goToPage(page: number): void {
-    console.log('🔄 goToPage:', page);
-    
-    if (page > 0 && page <= this.totalPages) {
-      this.currentPage = page;
-      this.loadOperazioni();
+  // Paginazione
+  goToPage(page: number) {
+    if (page > 0 && page <= this.paginationState().last_page) {
+      this.currentPage.set(page);
     }
   }
 
-  previousPage(): void {
-    this.goToPage(this.currentPage - 1);
-  }
-
-  nextPage(): void {
-    this.goToPage(this.currentPage + 1);
-  }
-
   // ============================================================
-  // PUBLIC METHODS - FILTRI
+  // CRUD
   // ============================================================
 
-  onFilterChange(): void {
-    console.log('🔎 Filtri cambiati, ricomincia da pagina 1');
-    this.currentPage = 1;
-    this.loadOperazioni();
-    this.loadStatistiche();
-  }
-
-  onTagSearchInput(value: string): void {
-    this.tagSearchInput = value;
-    
-    if (!value.trim()) {
-      this.filteredTags = this.allTags;
-      return;
-    }
-
-    const searchLower = value.toLowerCase();
-    this.filteredTags = this.allTags.filter(tag =>
-      tag.nome.toLowerCase().includes(searchLower)
-    );
-  }
-
-  selectTag(tag: TagModel): void {
-    this.filterTag = tag.id.toString();
-    this.selectedTagFilter = tag;
-    this.tagSearchInput = '';
-    this.filteredTags = this.allTags;
-    this.onFilterChange();
-  }
-
-  clearTagFilter(): void {
-    this.filterTag = '';
-    this.selectedTagFilter = null;
-    this.tagSearchInput = '';
-    this.onFilterChange();
-  }
-
-  // ============================================================
-  // PUBLIC METHODS - FORM OPERAZIONI
-  // ============================================================
-
-  openFormNew(): void {
-    console.log('➕ Apri form NUOVA operazione');
+  openFormNew() {
     this.operazioneEdit = null;
     this.isFormOpen = true;
   }
 
-  editOperazione(operazione: Operazione): void {
-    console.log('✏️ Modifica operazione:', operazione.id);
-    this.operazioneEdit = operazione;
+  editOperazione(op: Operazione) {
+    this.operazioneEdit = op;
     this.isFormOpen = true;
   }
 
-  deleteOperazione(operazione: Operazione): void {
-    const conferma = confirm(`Sei sicuro di voler eliminare l'operazione del ${operazione.data_operazione}?`);
-    
-    if (!conferma) return;
-
-    console.log('🗑️ Elimina operazione:', operazione.id);
-    
-    this.operazioneService.deleteOperazione(operazione.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('✅ Operazione eliminata');
-          this.loadOperazioni();
-        },
-        error: (error) => {
-          console.error('❌ Errore eliminazione:', error);
-          alert('Errore durante l\'eliminazione');
-        }
-      });
-  }
-
-  closeForm(): void {
-    console.log('❌ Chiudi form');
+  closeForm() {
     this.isFormOpen = false;
     this.operazioneEdit = null;
   }
 
-  onOperazioneSaved(): void {
-    console.log('💾 Operazione salvata, ricarica lista');
-    this.currentPage = 1;
-    this.loadOperazioni();
-    this.loadStatistiche();
+  onOperazioneSaved() {
+    // Basta emettere il trigger, la pipeline ricarica tutto mantenendo i filtri
+    this.loadTrigger$.next();
+    this.eventService.notifyOperazioneChanged();
     this.closeForm();
+  }
+
+  deleteOperazione(op: Operazione) {
+    const msg = op.trasferimento === 'T' 
+      ? "Attenzione: Stai cancellando un TRASFERIMENTO. Verrà eliminato anche il movimento sul conto collegato. Continuare?"
+      : "Sei sicuro di voler eliminare questa operazione?";
+
+    if (!confirm(msg)) return;
+
+    this.operazioneService.deleteOperazione(op.id).subscribe({
+      next: () => {
+        this.loadTrigger$.next(); // Ricarica lista e statistiche
+        this.eventService.notifyOperazioneChanged();
+      },
+      error: () => alert("Errore durante l'eliminazione")
+    });
   }
 }

@@ -1,128 +1,96 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Conto, ContoService } from '../../services/conto.service';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Conto, ContoService } from '../../services/conto.service';
 import { ContiPageForm } from '../conti-page-form/conti-page-form';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // ⬅️ Gestione pulita destroy
 
 @Component({
   selector: 'app-conti-page-list',
+  standalone: true,
   imports: [CommonModule, ContiPageForm],
   templateUrl: './conti-page-list.html',
   styleUrl: './conti-page-list.css',
 })
-export class ContiPageList implements OnInit, OnDestroy{
+export class ContiPageList implements OnInit {
 
-  conti: Conto[] = [];
-  loading: boolean = true;
-  error: string | null = null;
+  // SERVICES
+  private contoService = inject(ContoService);
+
+  // STATE SIGNALS
+  conti = signal<Conto[]>([]);
+  loading = signal(true);
+  error = signal<string | null>(null);
   
-  // Modal
-  isFormOpen: boolean = false;
-  contoEdit: Conto | null = null;
-  private destroy$ = new Subject<void>();
+  // MODAL STATE
+  isFormOpen = signal(false);
+  contoEdit = signal<Conto | null>(null);
   
-  constructor(private contoService: ContoService) { }
+  constructor() {
+    // Qui potresti mettere logiche reattive se servissero
+  }
 
   ngOnInit(): void {
     this.loadConti();
   }
   
-  /**
-   * Carica i conti dall'API
-   */
   loadConti(): void {
-    this.loading = true;
-    this.error = null;
-
-    this.contoService.getConti()
-    .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Conti ricevuti:', response);
-          
-          if (response.success) {
-            this.conti = response.data;
-          } else {
-            this.error = response.message;
-          }
-          
-          this.loading = false;
-        },
-        
-        error: (error) => {
-          console.error('Errore nel caricamento conti:', error);
-          this.error = `Errore: ${error.message || 'Impossibile caricare i conti'}`;
-          this.loading = false;
-        },
-        
-        complete: () => {
-          console.log('Caricamento conti completato');
+    this.loading.set(true);
+    // Non serve takeUntilDestroyed qui perché l'http client di Angular completa da solo
+    // ma se usassi stream continui, servirebbe.
+    this.contoService.getConti().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.conti.set(res.data);
+          this.error.set(null);
+        } else {
+          this.error.set(res.message || 'Errore caricamento dati');
         }
-      });
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error.set('Impossibile caricare i conti.');
+        this.loading.set(false);
+      }
+    });
   }
 
-  /**
-   * Apre il form per creare un nuovo conto
-   */
+  // --- AZIONI ---
+
   openFormNew(): void {
-    this.contoEdit = null;
-    this.isFormOpen = true;
+    this.contoEdit.set(null);
+    this.isFormOpen.set(true);
   }
 
-  /**
-   * Apre il form per modificare un conto
-   */
   editConto(conto: Conto): void {
-    this.contoEdit = conto;
-    this.isFormOpen = true;
+    this.contoEdit.set(conto);
+    this.isFormOpen.set(true);
   }
 
-  /**
-   * Chiude il form modale
-   */
   closeForm(): void {
-    this.isFormOpen = false;
-    this.contoEdit = null;
+    this.isFormOpen.set(false);
+    this.contoEdit.set(null);
   }
   
-  /**
-   * Chiamato quando un conto viene salvata dal form
-   */
   onContoSaved(): void {
-    // Ricarica da pagina 1
-    this.loadConti();
+    this.loadConti(); // Ricarica la lista
+    // closeForm() viene chiamato dal componente figlio via evento
   }
 
-  /**
-   * Elimina un conto
-   */
   deleteConto(id: number): void {
-    const conferma = confirm('Sei sicuro di voler eliminare questo conto?');
-    
-    if (!conferma) {
-      return;
-    }
+    if (!confirm('Sei sicuro di voler eliminare questo conto?')) return;
 
-    this.contoService.deleteConto(id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Conto eliminato:', response);
-          
-          // Ricarica la pagina
-          this.loadConti();
-        },
-        
-        error: (error) => {
-          console.error('Errore eliminazione conto:', error);
-          this.error = `Errore: ${error.message || 'Impossibile eliminare il conto'}`;
-        }
-      });
-  }
-    
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+    this.loading.set(true);
+    this.contoService.deleteConto(id).subscribe({
+      next: () => {
+        // Ottimizzazione: Rimuoviamo dalla lista locale senza ricaricare tutto
+        this.conti.update(list => list.filter(c => c.id !== id));
+        this.loading.set(false);
+      },
+      error: (err) => {
+        alert("Errore: Impossibile eliminare (forse ha delle operazioni collegate?)");
+        this.loading.set(false);
+      }
+    });
   }
 }

@@ -1,8 +1,5 @@
 <div class="operazioni-panel">
 
-  <!-- ============================================================
-       HEADER
-       ============================================================ -->
   <div class="panel-header">
     <h2>Operazioni</h2>
     <button class="btn-nuova-operazione" (click)="openFormNew()">
@@ -10,59 +7,47 @@
     </button>
   </div>
 
-  <!-- ============================================================
-       FORM MODAL
-       ============================================================ -->
   <app-operazione-form [isOpen]="isFormOpen" [operazioneEdit]="operazioneEdit" (close)="closeForm()"
     (saved)="onOperazioneSaved()">
   </app-operazione-form>
 
-  <!-- ============================================================
-       FILTRI
-       ============================================================ -->
   <div class="filtri-section">
-    <!-- Riga 1: Date -->
     <div class="filtri-row">
-      <input type="number" [(ngModel)]="filterAnno" (change)="onFilterChange()" placeholder="Anno (es: 2025)"
+      <input type="number" [ngModel]="filterAnno()" (ngModelChange)="setFilterAnno($event)" placeholder="Anno"
         class="filtro-input" min="2000" max="2099" />
 
-      <input type="number" [(ngModel)]="filterMese" (change)="onFilterChange()" placeholder="Mese (1-12)"
+      <input type="number" [ngModel]="filterMese()" (ngModelChange)="setFilterMese($event)" placeholder="Mese"
         class="filtro-input" min="1" max="12" />
 
-      <input type="date" [(ngModel)]="filterData" (change)="onFilterChange()" placeholder="Filtro per data"
-        class="filtro-input" />
+      <input type="date" [ngModel]="filterData()" (ngModelChange)="updateFilter('data', $event)" class="filtro-input" />
     </div>
 
-    <!-- Riga 2: Conto e Tag -->
     <div class="filtri-row">
-      <!-- Select Conto -->
-      <select [(ngModel)]="filterConto" (change)="onFilterChange()" class="filtro-input filtro-select">
-        <option value="">-- Seleziona Conto --</option>
-        @for (conto of conti; track conto.id) {
+      <select [ngModel]="filterConto()" (ngModelChange)="updateFilter('conto', $event)"
+        class="filtro-input filtro-select">
+        <option value="">-- Tutti i Conti --</option>
+        @for (conto of conti(); track conto.id) {
         <option [value]="conto.id">{{ conto.nome }}</option>
         }
       </select>
 
-      <!-- Tag Search con Autocomplete -->
       <div class="tag-filter-container">
         <div class="filtro-input tag-filter-input">
-          <!-- Tag selezionato -->
-          @if (selectedTagFilter) {
+
+          @if (selectedTagFilter()) {
           <span class="tag-filter-badge">
-            {{ selectedTagFilter.nome }}
+            {{ selectedTagFilter()?.nome }}
             <button class="btn-clear-tag" (click)="clearTagFilter()">✕</button>
           </span>
           }
 
-          <!-- Input ricerca -->
-          <input type="text" [(ngModel)]="tagSearchInput" (input)="onTagSearchInput($event.target.value)"
-            placeholder="Ricerca tag..." class="tag-filter-search-input" />
+          <input type="text" [ngModel]="tagSearchInput()" (ngModelChange)="tagSearchInput.set($event)"
+            placeholder="Cerca tag..." class="tag-filter-search-input" />
         </div>
 
-        <!-- Suggerimenti tag -->
-        @if (tagSearchInput && filteredTags.length > 0) {
+        @if (tagSearchInput() && filteredTags().length > 0) {
         <div class="tag-filter-suggestions">
-          @for (tag of filteredTags; track tag.id) {
+          @for (tag of filteredTags(); track tag.id) {
           <div class="tag-filter-item" (click)="selectTag(tag)">
             {{ tag.nome }}
           </div>
@@ -73,51 +58,39 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       ERRORE
-       ============================================================ -->
-  @if (error) {
+  @if (error()) {
   <div class="alert alert-error">
-    {{ error }}
+    {{ error() }}
   </div>
   }
 
-  <!-- ============================================================
-       STATISTICHE
-       ============================================================ -->
   <div class="statistics-section">
     <div class="stat-card guadagno">
-      <div class="stat-label">Guadagni</div>
-      <div class="stat-value">{{ guadagno | currencyEuro }}</div>
+      <div class="stat-label">Entrate</div>
+      <div class="stat-value">{{ statistiche().guadagno | currencyEuro }}</div>
     </div>
 
     <div class="stat-card spese">
-      <div class="stat-label">Spese</div>
-      <div class="stat-value">{{ spese | currencyEuro }}</div>
+      <div class="stat-label">Uscite</div>
+      <div class="stat-value">{{ statistiche().spese | currencyEuro }}</div>
     </div>
 
     <div class="stat-card saldo">
       <div class="stat-label">Saldo</div>
-      <div class="stat-value" [class.positivo]="saldo > 0" [class.negativo]="saldo < 0">
-        {{ saldo | currencyEuro }}
+      <div class="stat-value" [class.positivo]="statistiche().saldo >= 0" [class.negativo]="statistiche().saldo < 0">
+        {{ statistiche().saldo | currencyEuro }}
       </div>
     </div>
   </div>
 
-  <!-- ============================================================
-       LOADING
-       ============================================================ -->
-  @if (loading) {
+  @if (isLoading()) {
   <div class="loading-spinner">
     <div class="spinner"></div>
-    <p>Caricamento operazioni...</p>
+    <p>Aggiornamento dati...</p>
   </div>
   } @else {
 
-  <!-- ============================================================
-         TABELLA OPERAZIONI
-         ============================================================ -->
-  @if (operazioni.length > 0) {
+  @if (operazioni().length > 0) {
   <div class="operazioni-table-container">
     <table class="operazioni-table">
       <thead>
@@ -131,28 +104,29 @@
         </tr>
       </thead>
       <tbody>
-        @for (op of operazioni; track op.id) {
+        @for (op of operazioni(); track op.id) {
         <tr [class.positivo]="op.importo > 0" [class.negativo]="op.importo < 0">
           <td class="data">{{ op.data_operazione | date:'dd/MM/yyyy' }}</td>
           <td class="conto">{{ op.conto?.nome || 'N/A' }}</td>
           <td>
-            @if (op.tags && op.tags.length > 0) {
             <div class="tags">
               @for (tag of op.tags; track tag.id) {
               <span class="tag-badge">{{ tag.nome }}</span>
               }
             </div>
-            }
           </td>
           <td class="descrizione">
             <span class="desc-text">{{ op.descrizione }}</span>
+            @if (op.trasferimento === 'T') {
+            <span class="badge-transfer" title="Trasferimento">🔄</span>
+            }
           </td>
           <td class="importo" [class.positivo]="op.importo > 0" [class.negativo]="op.importo < 0">
             {{ op.importo | currencyEuro }}
           </td>
           <td class="azioni">
-            <button class="btn-action btn-edit" title="Modifica" (click)="editOperazione(op)">✏️</button>
-            <button class="btn-action btn-delete" title="Elimina" (click)="deleteOperazione(op)">🗑️</button>
+            <button class="btn-action btn-edit" (click)="editOperazione(op)">✏️</button>
+            <button class="btn-action btn-delete" (click)="deleteOperazione(op)">🗑️</button>
           </td>
         </tr>
         }
@@ -160,21 +134,14 @@
     </table>
   </div>
 
-  <!-- ============================================================
-           PAGINAZIONE
-           ============================================================ -->
-  <app-pagination [currentPage]="currentPage" [totalPages]="totalPages" [totalCount]="totalCount"
-    (pageChange)="goToPage($event)">
+  <app-pagination [currentPage]="paginationState().current_page" [totalPages]="paginationState().last_page"
+    [totalCount]="paginationState().total" (pageChange)="goToPage($event)">
   </app-pagination>
 
   } @else {
-  <!-- ============================================================
-           NO DATA
-           ============================================================ -->
   <div class="no-data">
-    <p>Nessuna operazione trovata</p>
+    <p>Nessuna operazione trovata con i filtri attuali.</p>
   </div>
   }
-
   }
 </div>

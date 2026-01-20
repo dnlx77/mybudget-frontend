@@ -1,70 +1,66 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContoService, Conto } from '../../services/conto.service';
-import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 import { EventService } from '../../services/event';
+import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
 
 @Component({
   selector: 'app-conti-panel',
+  standalone: true, // Assicurati che sia standalone
   imports: [CommonModule, CurrencyEuroPipe],
   templateUrl: './conti-panel.html',
   styleUrl: './conti-panel.css',
 })
-export class ContiPanelComponent implements OnInit, OnDestroy {
+export class ContiPanelComponent implements OnInit {
   
-  conti: Conto[] = [];
-  totaleSaldi: number = 0;
-  loading: boolean = true;
-  error: string | null = null;
+  // SERVICES
+  private contoService = inject(ContoService);
+  private eventService = inject(EventService);
 
-  private destroy$ = new Subject<void>();
+  // STATE (Signals)
+  conti = signal<Conto[]>([]);
+  loading = signal(true);
+  error = signal<string | null>(null);
 
-  constructor(
-    private contoService: ContoService,
-    private eventService: EventService
-  ) { }
+  // COMPUTED: Il totale si aggiorna da solo se 'conti' cambia!
+  totaleSaldi = computed(() => {
+    return this.conti().reduce((acc, c) => acc + (Number(c.saldo_totale) || 0), 0);
+  });
 
-  ngOnInit(): void {
-    this.loadConti();
-
-    // Quando un'operazione cambia, ricarica i conti
+  constructor() {
+    // ASCOLTA EVENTO CAMBIO OPERAZIONE
+    // Quando aggiungi/modifichi un'operazione, ricarichiamo i conti per aggiornare i saldi
     this.eventService.operazioneChanged$
-    .pipe(takeUntil(this.destroy$))
-    .subscribe(() => {
-      this.loadConti();
-    });
-  }
-
-  loadConti(): void {
-    this.contoService.getConti()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.conti = response.data as Conto[];
-            this.calculateTotale();
-          }
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Errore caricamento conti:', error);
-          this.error = 'Errore nel caricamento dei conti';
-          this.loading = false;
-        }
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        this.loadConti();
       });
   }
 
-  calculateTotale(): void {
-    this.totaleSaldi = this.conti.reduce((total, conto) => {
-      return total + (Number(conto.saldo_totale) || 0);
-    }, 0);
-    console.log('Totale saldi ==>' + this.totaleSaldi)
+  ngOnInit(): void {
+    this.loadConti();
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  loadConti(): void {
+    // Non settiamo loading a true qui per evitare "flash" fastidiosi durante gli aggiornamenti background
+    // this.loading.set(true); 
+
+    this.contoService.getConti().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.conti.set(res.data);
+          this.error.set(null);
+        } else {
+          this.error.set('Errore caricamento saldi');
+        }
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error.set('Impossibile caricare i conti');
+        this.loading.set(false);
+      }
+    });
   }
 }

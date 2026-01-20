@@ -1,244 +1,255 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, inject, signal, computed, effect, ViewChild, ViewChildren, QueryList, ElementRef, viewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Operazione } from '../../services/operazione.service';
+import { ReactiveFormsModule, FormBuilder, Validators, FormControl } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+// Services & Models
+import { OperazioneService, Operazione } from '../../services/operazione.service';
 import { ContoService, Conto } from '../../services/conto.service';
 import { TagService, TagModel } from '../../services/tag.service';
-import { OperazioneService } from '../../services/operazione.service';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { EventService } from '../../services/event';
 
 @Component({
   selector: 'app-operazione-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './operazione-form.html',
   styleUrl: './operazione-form.css',
 })
-export class OperazioneFormComponent implements OnInit, OnChanges, OnDestroy {
+export class OperazioneFormComponent implements OnInit {
   
-  @Input() isOpen: boolean = false;
-  @Input() operazioneEdit: Operazione | null = null;
+  // INPUT/OUTPUT
+  @Input() set isOpen(value: boolean) {
+    this._isOpen.set(value);
+  }
+  @Input() set operazioneEdit(value: Operazione | null) {
+    this._operazioneEdit.set(value);
+  }
+  
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  // Form fields
-  data_operazione: string = '';
-  importo: number | null = null;
-  descrizione: string = '';
-  conto_id: number | null = null;
-  conto_destinazione_id: number | null = null;
-  
-  // Data
-  conti: Conto[] = [];
-  allTags: TagModel[] = [];
-  selectedTags: TagModel[] = [];
-  
-  // Search
-  tagSearchInput: string = '';
-  filteredTags: TagModel[] = [];
-  showTagSuggestions: boolean = false;
-  
-  // State
-  loading: boolean = false;
-  loadingConti: boolean = true;
-  loadingTags: boolean = true;
-  error: string | null = null;
-  success: string | null = null;
-  isEditMode: boolean = false;
-  loadedTags: boolean = false;
-  loadedConti: boolean = false;
+  @ViewChild('tagInputRef') tagInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChildren('suggestionItem') suggestionItems!: QueryList<ElementRef>;
 
-  private destroy$ = new Subject<void>();
+  // SIGNALS DI STATO
+  private _isOpen = signal(false);
+  private _operazioneEdit = signal<Operazione | null>(null);
+  
+  // Esposti per il template
+  isOpenSignal = this._isOpen.asReadonly();
+  isEditMode = computed(() => !!this._operazioneEdit());
+  
+  // UI State
+  loading = signal(false);
+  error = signal<string | null>(null);
+  success = signal<string | null>(null);
+  
+  // Dati da API
+  conti = signal<Conto[]>([]);
+  allTags = signal<TagModel[]>([]);
+  
+  // Gestione Tag (Fuori dal FormGroup per facilità UI)
+  selectedTags = signal<TagModel[]>([]);
+  
+  // Controllo per input ricerca tag
+  tagSearchControl = new FormControl('');
 
-  constructor(
-    private contoService: ContoService,
-    private tagService: TagService,
-    private operazioneService: OperazioneService,
-    private eventService: EventService
-  ) { }
+  // REACTIVE FORM
+  private fb = inject(FormBuilder);
+  
+  form = this.fb.group({
+    data_operazione: [this.getTodayDate(), Validators.required],
+    importo: [null as number | null, Validators.required],
+    descrizione: [''],
+    conto_id: [null as number | null, Validators.required],
+    conto_destinazione_id: [null as number | null] // Opzionale
+  });
+
+  // Services
+  private operazioneService = inject(OperazioneService);
+  private contoService = inject(ContoService);
+  private tagService = inject(TagService);
+
+  // COMPUTED: Filtro Tag intelligenti
+  // Mostra i tag che matchano la ricerca E che NON sono già selezionati
+  filteredTags = computed(() => {
+    const term = this.tagSearchValue()?.toLowerCase() || '';
+    if (!term) return [];
+    
+    return this.allTags().filter(tag => 
+      tag.nome.toLowerCase().includes(term) && 
+      !this.selectedTags().some(selected => selected.id === tag.id)
+    );
+  });
+  
+  // Helper per leggere valore search in modo reattivo
+  private tagSearchValue = signal('');
+
+  constructor() {
+    // 1. EFFETTO: Gestione Apertura/Chiusura e Popolamento
+    effect(() => {
+      if (this._isOpen()) {
+        this.resetState();
+        if (this._operazioneEdit()) {
+          this.populateForm(this._operazioneEdit()!);
+        } else {
+          this.form.reset({
+            data_operazione: this.getTodayDate(),
+            importo: null,
+            descrizione: '',
+            conto_id: null,
+            conto_destinazione_id: null
+          });
+          this.selectedTags.set([]);
+        }
+      }
+    }, { allowSignalWrites: true });
+
+    // 2. VALIDAZIONE CROSS-FIELD: Destinazione != Origine
+    this.form.controls.conto_destinazione_id.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(destId => {
+        const sourceId = this.form.controls.conto_id.value;
+        if (destId && destId == sourceId) {
+          this.form.controls.conto_destinazione_id.setErrors({ sameAccount: true });
+        } else {
+          // Rimuovi errore se valido
+          if (this.form.controls.conto_destinazione_id.hasError('sameAccount')) {
+            this.form.controls.conto_destinazione_id.setErrors(null);
+          }
+        }
+      });
+      
+    // 3. Sync input ricerca tag col signal
+    this.tagSearchControl.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(val => this.tagSearchValue.set(val || ''));
+  }
 
   ngOnInit(): void {
-    if (!this.loadedConti) {
-    this.loadConti();
-    }
-    if (!this.loadedTags) {
-      this.loadTags();
-    }
+    // Carica dati necessari all'avvio
+    this.contoService.getConti().subscribe(res => {
+      if(res.success) this.conti.set(res.data);
+    });
+    this.tagService.getTags().subscribe(res => {
+      if(res.success) this.allTags.set(res.data);
+    });
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen'] && this.isOpen) {
-      this.error = null;
-      this.success = null;
-      
-      if (this.operazioneEdit) {
-        // EDIT MODE
-        this.isEditMode = true;
-        this.populateForm();
-      } else {
-        // CREATE MODE
-        this.isEditMode = false;
-        this.resetForm();
-      }
-    }
-  }
-
-  loadConti(): void {
-    this.contoService.getConti()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.conti = response.data as Conto[];
-            this.loadedConti = true;
-          }
-          this.loadingConti = false;
-        },
-        error: (error) => {
-          console.error('Errore caricamento conti:', error);
-          this.loadingConti = false;
-        }
-      });
-  }
-
-  loadTags(): void {
-    this.tagService.getTags()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.allTags = response.data as TagModel[];
-            this.loadedTags = true; 
-          }
-          this.loadingTags = false;
-        },
-        error: (error) => {
-          console.error('Errore caricamento tag:', error);
-          this.loadingTags = false;
-        }
-      });
-  }
-
-  populateForm(): void {
-    if (this.operazioneEdit) {
-      this.data_operazione = this.operazioneEdit.data_operazione;
-      this.importo = this.operazioneEdit.importo ? parseFloat(String(this.operazioneEdit.importo)) : null;
-      this.descrizione = this.operazioneEdit.descrizione;
-      this.conto_id = this.operazioneEdit.conto_id;
-      this.selectedTags = this.operazioneEdit.tags || [];
-      this.tagSearchInput = '';
+  // LOGICA FORM
+  populateForm(op: Operazione) {
+    this.form.patchValue({
+      data_operazione: op.data_operazione,
+      importo: op.importo,
+      descrizione: op.descrizione,
+      conto_id: op.conto_id,
+      conto_destinazione_id: null // In edit non gestiamo cambio destinazione complesso per ora
+    });
+    
+    if (op.tags) {
+      this.selectedTags.set([...op.tags]);
     }
   }
 
-  resetForm(): void {
-    this.data_operazione = this.getTodayDate();
-    this.importo = null;
-    this.descrizione = '';
-    this.conto_id = null;
-    this.conto_destinazione_id = null;
-    this.selectedTags = [];
-    this.tagSearchInput = '';
+  resetState() {
+    this.error.set(null);
+    this.success.set(null);
+    this.tagSearchControl.setValue('');
   }
 
   getTodayDate(): string {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return new Date().toISOString().split('T')[0];
   }
 
-  onTagSearchInput(value: string): void {
-    this.tagSearchInput = value;
-    
-    if (!value.trim()) {
-      this.filteredTags = [];
-      this.showTagSuggestions = false;
+  // GESTIONE TAGS
+  selectTag(tag: TagModel) {
+    this.selectedTags.update(tags => [...tags, tag]);
+    this.tagSearchControl.setValue(''); // Pulisce input
+
+    // NUOVO: Rimetti il focus sulla casella di input!
+    // Usiamo setTimeout per assicurarci che avvenga dopo il rendering del ciclo di Angular
+    setTimeout(() => {
+        this.tagInputRef.nativeElement.focus();
+    }, 0);
+  }
+
+  removeTag(tagId: number) {
+    this.selectedTags.update(tags => tags.filter(t => t.id !== tagId));
+  }
+
+  // Gestione tastiera sull'input
+  handleInputKeydown(event: KeyboardEvent) {
+    // Se preme TAB e ci sono suggerimenti visibili
+    if (event.key === 'Tab' && this.filteredTags().length > 0) {
+      event.preventDefault(); // Ferma il salto al campo 'Descrizione'
+      
+      // Sposta il focus sul primo elemento della lista
+      const firstItem = this.suggestionItems.first;
+      if (firstItem) {
+        firstItem.nativeElement.focus();
+      }
+    }
+    // (Opzionale) Se preme INVIO e c'è solo un suggerimento, selezionalo subito
+    else if (event.key === 'Enter' && this.filteredTags().length === 1) {
+        event.preventDefault();
+        this.selectTag(this.filteredTags()[0]);
+    }
+  }
+
+  // Gestione tastiera sugli elementi della lista (per selezionare con Invio)
+  handleSuggestionKeydown(event: KeyboardEvent, tag: TagModel) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.selectTag(tag);
+    }
+  }
+
+  // SUBMIT
+  onSubmit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched(); // Mostra errori in rosso
+      this.error.set("Compila correttamente tutti i campi obbligatori.");
       return;
     }
 
-    const searchLower = value.toLowerCase();
-    this.filteredTags = this.allTags.filter(tag => {
-      // Controlla che il nome contenga la ricerca
-      const matchesSearch = tag.nome.toLowerCase().includes(searchLower);
-      
-      // Controlla che non sia già selezionato
-      const notSelected = !this.selectedTags.some(st => st.id === tag.id);
-      
-      return matchesSearch && notSelected;
-    });
-
-    this.showTagSuggestions = this.filteredTags.length > 0;
-  }
-
-  selectTag(tag: TagModel): void {
-    this.selectedTags.push(tag);
-    this.tagSearchInput = '';
-    this.filteredTags = [];
-    this.showTagSuggestions = false;
-  }
-
-  removeTag(tagId: number): void {
-    this.selectedTags = this.selectedTags.filter(t => t.id !== tagId);
-  }
-
-  onSubmit(): void {
-    // Validazione
-    if (!this.data_operazione || this.importo === null || !this.conto_id || this.selectedTags.length === 0) {
-      this.error = 'Compilare tutti i campi obbligatori (Data, Importo, Conto, almeno 1 Tag)';
+    if (this.selectedTags().length === 0) {
+      this.error.set("Seleziona almeno un tag.");
       return;
     }
 
-    this.loading = true;
-    this.error = null;
-    this.success = null;
+    this.loading.set(true);
+    this.error.set(null);
 
-    const operazione: any = {
-      id: this.operazioneEdit?.id || 0,
-      data_operazione: this.data_operazione,
-      importo: this.importo,
-      descrizione: this.descrizione,
-      conto_id: this.conto_id,
-      conto_destinazione_id: this.conto_destinazione_id,
-      tags: this.selectedTags.map(t => t.id),
+    // Prepara payload
+    const formData = this.form.getRawValue();
+    const payload: any = {
+      ...formData,
+      tags: this.selectedTags().map(t => t.id),
+      id: this.isEditMode() ? this._operazioneEdit()!.id : undefined
     };
 
-    console.log('📤 Payload inviato:', operazione);  // ← Aggiungi questo per debuggare
+    const req$ = this.isEditMode()
+      ? this.operazioneService.updateOperazione(payload.id, payload)
+      : this.operazioneService.createOperazione(payload);
 
-    const operation$ = this.isEditMode
-      ? this.operazioneService.updateOperazione(this.operazioneEdit!.id, operazione)
-      : this.operazioneService.createOperazione(operazione);
-
-    operation$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Operazione salvata:', response);
-          this.success = this.isEditMode
-            ? 'Operazione modificata con successo!'
-            : 'Operazione creata con successo!';
-          
-          this.loading = false;
-          
-          setTimeout(() => {
-            this.onClose();
-            this.saved.emit();
-            this.eventService.notifyOperazioneChanged();
-          }, 1000);
-        },
-        error: (error) => {
-          console.error('Errore salvataggio operazione:', error);
-          this.error = `Errore: ${error.error?.message || 'Impossibile salvare'}`;
-          this.loading = false;
-        }
-      });
+    req$.subscribe({
+      next: (res) => {
+        this.success.set(this.isEditMode() ? "Modificato con successo!" : "Creato con successo!");
+        this.loading.set(false);
+        setTimeout(() => {
+          this.saved.emit();
+          this.onClose();
+        }, 1000);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error.set(err.error?.message || "Errore durante il salvataggio.");
+        this.loading.set(false);
+      }
+    });
   }
 
-  onClose(): void {
+  onClose() {
     this.close.emit();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

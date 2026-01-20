@@ -1,121 +1,107 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ContoService, Conto } from '../../services/conto.service';
 
 @Component({
   selector: 'app-conti-page-form',
-  imports: [CommonModule, FormsModule],
-  templateUrl: './conti-page-form.html',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule], // ⬅️ Passiamo a ReactiveFormsModule
+  templateUrl: './conti-page-form.html', // Assicurati di aggiornare anche l'HTML (vedi sotto)
   styleUrl: './conti-page-form.css',
 })
-export class ContiPageForm implements OnInit, OnChanges, OnDestroy{
+export class ContiPageForm {
 
-  @Input() isOpen: boolean = false;
-  @Input() contoEdit: Conto | null = null;
+  // INPUT / OUTPUT
+  @Input() set isOpen(value: boolean) {
+    this._isOpen.set(value);
+  }
+  @Input() set contoEdit(value: Conto | null) {
+    this._contoEdit.set(value);
+  }
+  
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  // Form fields
-  nomeConto: string = '';
-
-  // State
-  loading: boolean = false;
-  error: string | null = null;
-  success: string | null = null;
-  isEditMode: boolean = false;
-
-  private destroy$ = new Subject<void>();
-
-  constructor(
-      private contoService: ContoService,
-    ) { }
+  // SIGNALS DI STATO
+  _isOpen = signal(false);
+  _contoEdit = signal<Conto | null>(null);
   
-  ngOnInit(): void {
-  }
+  loading = signal(false);
+  error = signal<string | null>(null);
+  success = signal<string | null>(null);
+  
+  // FORM REACTIVE
+  private fb = inject(FormBuilder);
+  private contoService = inject(ContoService);
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen'] && this.isOpen) {
-      this.error = null;
-      this.success = null;
-      
-      if (this.contoEdit) {
-        // EDIT MODE
-        this.isEditMode = true;
-        this.populateForm();
-      } else {
-        // CREATE MODE
-        this.isEditMode = false;
-        this.resetForm();
+  form = this.fb.group({
+    nome: ['', [Validators.required, Validators.minLength(3)]]
+    // Qui in futuro potrai aggiungere: saldo_iniziale: [0], colore: ['#000000']
+  });
+
+  constructor() {
+    // EFFETTO: Quando si apre il modale, popola o resetta il form
+    effect(() => {
+      if (this._isOpen()) {
+        this.error.set(null);
+        this.success.set(null);
+        
+        const conto = this._contoEdit();
+        if (conto) {
+          // Edit Mode
+          this.form.patchValue({ nome: conto.nome });
+        } else {
+          // Create Mode
+          this.form.reset({ nome: '' });
+        }
       }
-    }
+    }, { allowSignalWrites: true });
   }
 
-  populateForm() : void {
-    if (this.contoEdit) {
-      this.nomeConto = this.contoEdit.nome;
-    }
-  }
-
-  resetForm() : void {
-    this.nomeConto = '';
-  }
-
-  onSubmit(): void {
-    // Validazione
-    if (!this.nomeConto) {
-      this.error = 'Compilare il campo nome';
+  onSubmit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       return;
     }
 
-    this.loading = true;
-    this.error = null;
-    this.success = null;
+    this.loading.set(true);
+    this.error.set(null);
 
-    const conto: any = {
-      id: this.contoEdit?.id || 0,
-      nome: this.nomeConto
+    const formData = this.form.getRawValue();
+
+    // TypeScript è felice perché id è un numero (0).
+    // Laravel è felice perché ignora lo 0 e crea l'ID reale.
+    const payload: Conto = {
+      id: this._contoEdit()?.id ?? 0, 
+      nome: formData.nome ?? '',
+      // saldo_totale, operazioni, ecc. sono opzionali nell'interfaccia o gestiti dal backend
     };
 
-    console.log('📤 Payload inviato:', conto);  // ← Aggiungi questo per debuggare
+    console.log('📤 Payload:', payload);
 
-    const conto$ = this.isEditMode
-      ? this.contoService.updateConto(this.contoEdit!.id, conto)
-      : this.contoService.createConto(conto);
+    const req$ = this._contoEdit()
+      ? this.contoService.updateConto(payload.id, payload)
+      : this.contoService.createConto(payload);
 
-    conto$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Conto salvato:', response);
-          this.success = this.isEditMode
-            ? 'Conto modificato con successo!'
-            : 'Conto creato con successo!';
-          
-          this.loading = false;
-          
-          setTimeout(() => {
-            this.onClose();
-            this.saved.emit();
-          }, 1000);
-        },
-        error: (error) => {
-          console.error('Errore salvataggio conto:', error);
-          this.error = `Errore: ${error.error?.message || 'Impossibile salvare'}`;
-          this.loading = false;
-        }
-      });
+    req$.subscribe({
+      next: (res) => {
+        this.success.set(this._contoEdit() ? 'Conto modificato!' : 'Conto creato!');
+        this.loading.set(false);
+        setTimeout(() => {
+          this.saved.emit();
+          this.onClose();
+        }, 1000);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error.set(err.error?.message || "Errore durante il salvataggio.");
+        this.loading.set(false);
+      }
+    });
   }
 
-  onClose(): void {
+  onClose() {
     this.close.emit();
   }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
 }
-

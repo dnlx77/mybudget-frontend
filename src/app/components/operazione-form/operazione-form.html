@@ -1,148 +1,134 @@
-<!-- Modal Backdrop -->
-@if (isOpen) {
+@if (isOpenSignal()) {
 <div class="modal-backdrop" (click)="onClose()"></div>
 }
 
-<!-- Modal -->
-@if (isOpen) {
+@if (isOpenSignal()) {
 <div class="modal-container">
     <div class="modal-content">
 
-        <!-- Header -->
         <div class="modal-header">
-            @if (isEditMode) {
-            <h2>Modifica Operazione</h2>
-            } @else {
-            <h2>Nuova Operazione</h2>
-            }
+            <h2>{{ isEditMode() ? 'Modifica Operazione' : 'Nuova Operazione' }}</h2>
             <button class="close-btn" (click)="onClose()">✕</button>
         </div>
 
-        <!-- Body -->
         <div class="modal-body">
 
-            <!-- Errore -->
-            @if (error) {
-            <div class="alert alert-error">
-                {{ error }}
-            </div>
+            @if (error()) {
+            <div class="alert alert-error">{{ error() }}</div>
+            }
+            @if (success()) {
+            <div class="alert alert-success">{{ success() }}</div>
             }
 
-            <!-- Success -->
-            @if (success) {
-            <div class="alert alert-success">
-                {{ success }}
-            </div>
-            }
-
-            <!-- Loading Data -->
-            @if (loadingConti || loadingTags) {
-            <p class="loading-text">Caricamento dati...</p>
+            @if (conti().length === 0) {
+            <p class="loading-text">Caricamento conti e tag...</p>
             } @else {
 
-            <!-- Form -->
-            <form (ngSubmit)="onSubmit()">
+            <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
-                <!-- Conto Origine -->
                 <div class="form-group">
                     <label for="conto">Conto *</label>
-                    <select id="conto" [(ngModel)]="conto_id" name="conto_id" required [disabled]="loading">
+                    <select id="conto" formControlName="conto_id">
                         <option [value]="null">Seleziona un conto</option>
-                        @for (conto of conti; track conto.id) {
+                        @for (conto of conti(); track conto.id) {
                         <option [value]="conto.id">{{ conto.nome }}</option>
                         }
                     </select>
+                    @if (form.get('conto_id')?.invalid && form.get('conto_id')?.touched) {
+                    <span class="error-text">Il conto è obbligatorio.</span>
+                    }
                 </div>
 
-                <!-- Conto Destinazione (opzionale - trasferimenti) -->
-                <div class="form-group">
-                    <label for="conto-dest">Conto Destinazione (opzionale)</label>
-                    <select id="conto-dest" [(ngModel)]="conto_destinazione_id" name="conto_destinazione_id"
-                        [disabled]="loading || !conto_id">
-                        <option [value]="null">- Nessun trasferimento -</option>
-                        @for (conto of conti; track conto.id) {
-                        @if (conto.id !== conto_id) {
+                @if (!isEditMode()) {
+                <div class="form-group transfer-group">
+                    <label for="conto-dest">
+                        Conto Destinazione <span class="badge-optional">Opzionale - Trasferimento</span>
+                    </label>
+                    <select id="conto-dest" formControlName="conto_destinazione_id">
+                        <option [value]="null">-- Nessun Trasferimento --</option>
+                        @for (conto of conti(); track conto.id) {
+                        @if (conto.id != form.get('conto_id')?.value) {
                         <option [value]="conto.id">{{ conto.nome }}</option>
                         }
                         }
                     </select>
+                    @if (form.get('conto_destinazione_id')?.hasError('sameAccount')) {
+                    <span class="error-text">Il conto di destinazione deve essere diverso.</span>
+                    }
+                </div>
+                }
+
+                <div class="form-row-split">
+                    <div class="form-group">
+                        <label for="importo">Importo *</label>
+                        <input id="importo" type="number" step="0.01" formControlName="importo"
+                            placeholder="Es: -50.00 o 100" />
+                        @if (form.get('importo')?.invalid && form.get('importo')?.touched) {
+                        <span class="error-text">Inserisci un importo valido.</span>
+                        }
+                    </div>
+
+                    <div class="form-group">
+                        <label for="data">Data *</label>
+                        <input id="data" type="date" formControlName="data_operazione" [max]="getTodayDate()" />
+                        @if (form.get('data_operazione')?.invalid && form.get('data_operazione')?.touched) {
+                        <span class="error-text">Data obbligatoria.</span>
+                        }
+                    </div>
                 </div>
 
-                <!-- Importo -->
                 <div class="form-group">
-                    <label for="importo">Importo * (negativo=spesa, positivo=entrata)</label>
-                    <input id="importo" type="number" step="0.01" [(ngModel)]="importo" name="importo"
-                        placeholder="Es: -50.50 o 100.00" required [disabled]="loading" />
-                </div>
+                    <label>Tags *</label>
 
-                <!-- Data Operazione -->
-                <div class="form-group">
-                    <label for="data">Data Operazione *</label>
-                    <input id="data" type="date" [(ngModel)]="data_operazione" name="data_operazione" [max]="getTodayDate()" required
-                        [disabled]="loading" />
-                </div>
-
-                <!-- Tag Search -->
-                <div class="form-group">
-                    <label for="tag-search">Tag *</label>
                     <div class="tag-search-container">
 
-                        <!-- Selected Tags as Chips -->
                         <div class="selected-tags-inline">
-                            @for (tag of selectedTags; track tag.id) {
+                            @for (tag of selectedTags(); track tag.id) {
                             <span class="tag-badge-inline">
                                 {{ tag.nome }}
-                                <button type="button" class="remove-tag-btn" (click)="removeTag(tag.id)"
-                                    [disabled]="loading">
-                                    ✕
-                                </button>
+                                <button type="button" class="remove-tag-btn" (click)="removeTag(tag.id)">✕</button>
                             </span>
                             }
                         </div>
 
-                        <!-- Search Input -->
-                        <input id="tag-search" type="text" class="tag-search-input" [(ngModel)]="tagSearchInput"
-                            (input)="onTagSearchInput(tagSearchInput)" name="tagSearch"
-                            placeholder="Digita per cercare tag..." [disabled]="loading" autocomplete="off" />
+                        <input type="text" #tagInputRef class="tag-search-input" [formControl]="tagSearchControl" (keydown)="handleInputKeydown($event)"
+                            placeholder="Cerca tag..." autocomplete="off" />
                     </div>
 
-                    <!-- Tag Suggestions -->
-                    @if (showTagSuggestions && filteredTags.length > 0) {
+                    @if (filteredTags().length > 0) {
                     <div class="tag-suggestions">
-                        @for (tag of filteredTags; track tag.id) {
-                        <div class="tag-suggestion-item" (click)="selectTag(tag)">
+                        @for (tag of filteredTags(); track tag.id) {
+                        <div class="tag-suggestion-item" tabindex="0" #suggestionItem (click)="selectTag(tag)" (keydown)="handleSuggestionKeydown($event, tag)">
                             {{ tag.nome }}
                         </div>
                         }
                     </div>
                     }
+
+                    @if (selectedTags().length === 0 && form.touched) {
+                    <span class="error-text">Seleziona almeno un tag.</span>
+                    }
                 </div>
 
-                <!-- Descrizione -->
                 <div class="form-group">
-                    <label for="descrizione">Descrizione</label>
-                    <textarea id="descrizione" [(ngModel)]="descrizione" name="descrizione"
-                        placeholder="Es: Spesa alimentari al supermercato" rows="3" required [disabled]="loading"></textarea>
+                    <label for="descrizione">Descrizione</label> <textarea id="descrizione" formControlName="descrizione" rows="2"
+                        placeholder="Es: Spesa supermercato..."></textarea>
+                
                 </div>
 
             </form>
             }
         </div>
 
-        <!-- Footer -->
         <div class="modal-footer">
-            <button class="btn-cancel" (click)="onClose()" [disabled]="loading">
+            <button class="btn-cancel" (click)="onClose()" [disabled]="loading()">
                 Annulla
             </button>
-            <button class="btn-save" (click)="onSubmit()" [disabled]="loading">
-                @if (loading) {
+            <button class="btn-save" (click)="onSubmit()" [disabled]="loading()">
+                @if (loading()) {
                 Salvataggio...
                 } @else {
-                @if (isEditMode) {
-                Aggiorna
-                } @else {
-                Crea
-                }
+                {{ isEditMode() ? 'Salva Modifiche' : 'Crea Operazione' }}
                 }
             </button>
         </div>

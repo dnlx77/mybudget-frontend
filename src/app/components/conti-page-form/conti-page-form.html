@@ -1,58 +1,53 @@
-<!-- Modal Backdrop -->
-@if (isOpen) {
-<div class="modal-backdrop"></div>
-
-<!-- Modal container-->
- <div class="modal-container">
-    <!-- Header -->
-    <div class="modal-header">
-        <h2>{{ isEditMode ? 'Modifica conto' : 'Nuovo conto' }}</h2>
-    </div>
-
-    <!-- Boby -->
-    <div class="modal-body">
-        <!-- Messaggio di errore -->
-         @if(error) {
-        <div class="error">{{ error }}</div>
-        }
-
-        <!-- Messaggio di successo -->
-        @if(success) {
-            <div class="success">{{ success }}</div>
-        }
-
-        <!-- Form con input del nome -->
-        <div class="form-group">
-            <label for="nome">Nome conto*</label>
-            <input 
-                id="nome"
-                type="text"
-                [(ngModel)]="nomeConto"
-                name="nome"
-                placeholder="Es: Conto Corrente"
-                [disabled]="loading"
-            />
-        </div>
-    </div>
-
-    <!-- Footer -->
-     <div class="modal-footer">
-        <button class="btn-cancel" (click)="onClose()" [disabled]="loading">
-            Annulla
-        </button>
-        
-        <button class="btn-save" (click)="onSubmit()" [disabled]="loading">
-            @if (loading) {
-            Salvataggio...
-            } @else {
-            @if (isEditMode) {
-            Aggiorna
-            } @else {
-            Crea
-            }
-            }
-        </button>
-     </div>
- </div>
+@if (_isOpen()) {
+<div class="modal-backdrop" (click)="onClose()"></div>
 }
 
+@if (_isOpen()) {
+<div class="modal-container">
+
+    <div class="modal-header">
+        <h2>{{ _contoEdit() ? 'Modifica Conto' : 'Nuovo Conto' }}</h2>
+        <button class="close-btn" (click)="onClose()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+        @if (error()) {
+        <div class="error">{{ error() }}</div>
+        }
+
+        @if (success()) {
+        <div class="success">{{ success() }}</div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+            <div class="form-group">
+                <label for="nome">Nome Conto *</label>
+                <input id="nome" type="text" formControlName="nome" placeholder="Es: Hype, Banca Intesa..."
+                    [class.input-error]="form.get('nome')?.invalid && form.get('nome')?.touched" />
+
+                @if (form.get('nome')?.invalid && form.get('nome')?.touched) {
+                <span class="error-text">Il nome è obbligatorio (min 3 caratteri).</span>
+                }
+            </div>
+
+        </form>
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn-cancel" (click)="onClose()" [disabled]="loading()">
+            Annulla
+        </button>
+
+        <button class="btn-save" (click)="onSubmit()" [disabled]="loading()">
+            @if (loading()) {
+            Salvataggio...
+            } @else {
+            {{ _contoEdit() ? 'Salva Modifiche' : 'Crea Conto' }}
+            }
+        </button>
+    </div>
+
+</div>
+}
