@@ -1,128 +1,88 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { TagModel, TagService } from '../../services/tag.service';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TagModel, TagService } from '../../services/tag.service';
 import { TagsPageForm } from '../tags-page-form/tags-page-form';
-
 
 @Component({
   selector: 'app-tags-page-list',
+  standalone: true,
   imports: [CommonModule, TagsPageForm],
   templateUrl: './tags-page-list.html',
   styleUrl: './tags-page-list.css',
 })
-export class TagsPageList implements OnInit, OnDestroy{
-  tags: TagModel[] = [];
-  loading: boolean = true;
-  error: string | null = null;
-  
-  // Modal
-  isFormOpen: boolean = false;
-  tagEdit: TagModel | null = null;
-  private destroy$ = new Subject<void>();
-  
-  constructor(private tagService: TagService) { }
+export class TagsPageList implements OnInit {
 
+  // SERVICES
+  private tagService = inject(TagService);
+
+  // STATE SIGNALS
+  tags = signal<TagModel[]>([]);
+  loading = signal(true);
+  error = signal<string | null>(null);
+  
+  // MODAL STATE
+  isFormOpen = signal(false);
+  tagEdit = signal<TagModel | null>(null);
+  
   ngOnInit(): void {
     this.loadTags();
   }
   
-  /**
-   * Carica i conti dall'API
-   */
   loadTags(): void {
-    this.loading = true;
-    this.error = null;
-
-    this.tagService.getTags()
-    .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Tags ricevuti:', response);
-          
-          if (response.success) {
-            this.tags = response.data;
-          } else {
-            this.error = response.message;
-          }
-          
-          this.loading = false;
-        },
-        
-        error: (error) => {
-          console.error('Errore nel caricamento tags:', error);
-          this.error = `Errore: ${error.message || 'Impossibile caricare i tags'}`;
-          this.loading = false;
-        },
-        
-        complete: () => {
-          console.log('Caricamento tags completato');
+    this.loading.set(true);
+    this.tagService.getTags().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.tags.set(res.data);
+          this.error.set(null);
+        } else {
+          this.error.set(res.message || 'Errore caricamento tags');
         }
-      });
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error.set('Impossibile caricare i tags.');
+        this.loading.set(false);
+      }
+    });
   }
 
-  /**
-   * Apre il form per creare un nuovo tag
-   */
+  // --- AZIONI ---
+
   openFormNew(): void {
-    this.tagEdit = null;
-    this.isFormOpen = true;
+    this.tagEdit.set(null);
+    this.isFormOpen.set(true);
   }
 
-  /**
-   * Apre il form per modificare un tag
-   */
   editTag(tag: TagModel): void {
-    this.tagEdit = tag;
-    this.isFormOpen = true;
+    this.tagEdit.set(tag);
+    this.isFormOpen.set(true);
   }
 
-  /**
-   * Chiude il form modale
-   */
   closeForm(): void {
-    this.isFormOpen = false;
-    this.tagEdit = null;
+    this.isFormOpen.set(false);
+    this.tagEdit.set(null);
   }
   
-  /**
-   * Chiamato quando un tag viene salvata dal form
-   */
   onTagSaved(): void {
-    // Ricarica da pagina 1
-    this.loadTags();
+    this.loadTags(); // Ricarica lista completa
   }
 
-  /**
-   * Elimina un tag
-   */
   deleteTag(id: number): void {
-    const conferma = confirm('Sei sicuro di voler eliminare questo tag?');
-    
-    if (!conferma) {
-      return;
-    }
+    if (!confirm('Sei sicuro di voler eliminare questo tag?')) return;
 
-    this.tagService.deleteTag(id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Tag eliminato:', response);
-          
-          // Ricarica la pagina
-          this.loadTags();
-        },
-        
-        error: (error) => {
-          console.error('Errore eliminazione tag:', error);
-          this.error = `Errore: ${error.message || 'Impossibile eliminare il tag'}`;
-        }
-      });
-  }
-    
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+    this.loading.set(true); // Mostra loading brevemente o usa uno spinner locale
+    this.tagService.deleteTag(id).subscribe({
+      next: () => {
+        // Ottimizzazione: Rimuovi localmente
+        this.tags.update(list => list.filter(t => t.id !== id));
+        this.loading.set(false);
+      },
+      error: (err) => {
+        alert("Errore: Impossibile eliminare il tag.");
+        this.loading.set(false);
+      }
+    });
   }
 }

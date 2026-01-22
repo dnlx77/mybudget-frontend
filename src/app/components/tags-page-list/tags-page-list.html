@@ -1,22 +1,18 @@
 <div class="tags-page-list">
-    <!-- Header con bottone "Nuovo Tag" -->
     <div class="header">
         <h1>Gestione Tags</h1>
         <button (click)="openFormNew()">➕ Nuovo Tag</button>
     </div>
 
-    <!-- Loading -->
-    @if (loading) {
-    <div class="loading">Caricamento...</div>
+    @if (loading()) {
+    <div class="loading">Caricamento in corso...</div>
     }
 
-    <!-- Errore -->
-    @if (error) {
-    <div class="error">{{ error }}</div>
+    @if (error()) {
+    <div class="error">{{ error() }}</div>
     }
 
-    <!-- Lista Conti -->
-    @if (!loading && tags.length > 0) {
+    @if (!loading() && tags().length > 0) {
     <table class="tags-table">
         <thead>
             <tr>
@@ -25,12 +21,14 @@
             </tr>
         </thead>
         <tbody>
-            @for (tag of tags; track tag.id) {
+            @for (tag of tags(); track tag.id) {
             <tr>
                 <td>{{ tag.nome }}</td>
                 <td>
-                    <button class="btn-edit" (click)="editTag(tag)">✏️</button>
-                    <button class="btn-delete" (click)="deleteTag(tag.id)">🗑️</button>
+                    <div class="azioni">
+                        <button class="btn-edit" (click)="editTag(tag)" title="Modifica">✏️</button>
+                        <button class="btn-delete" (click)="deleteTag(tag.id)" title="Elimina">🗑️</button>
+                    </div>
                 </td>
             </tr>
             }
@@ -38,13 +36,14 @@
     </table>
     }
 
-    <!-- Nessun tag -->
-    @if (!loading && tags.length === 0) {
-    <p>Nessun tag trovato</p>
+    @if (!loading() && tags().length === 0) {
+    <div class="no-data">
+        <p>Nessun tag trovato.</p>
+        <small>Aggiungi tag per categorizzare le tue spese.</small>
+    </div>
     }
 
-    <!-- Form Modal Component -->
-    <app-tags-page-form [isOpen]="isFormOpen" [tagEdit]="tagEdit" (close)="closeForm()" (saved)="onTagSaved()">
+    <app-tags-page-form [isOpen]="isFormOpen()" [tagEdit]="tagEdit()" (close)="closeForm()" (saved)="onTagSaved()">
     </app-tags-page-form>
 
 </div>

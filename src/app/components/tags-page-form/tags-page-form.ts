@@ -1,120 +1,102 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TagService, TagModel } from '../../services/tag.service';
 
 @Component({
   selector: 'app-tags-page-form',
-  imports: [CommonModule, FormsModule],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule], // ⬅️ Reactive Forms
   templateUrl: './tags-page-form.html',
   styleUrl: './tags-page-form.css',
 })
-export class TagsPageForm implements OnInit, OnChanges, OnDestroy {
-  
-  @Input() isOpen: boolean = false;
-  @Input() tagEdit: TagModel | null = null;
+export class TagsPageForm {
+
+  // INPUT / OUTPUT con setter per Signals
+  @Input() set isOpen(value: boolean) {
+    this._isOpen.set(value);
+  }
+  @Input() set tagEdit(value: TagModel | null) {
+    this._tagEdit.set(value);
+  }
+
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
-  // Form fields
-  nomeTag: string = '';
+  // STATE SIGNALS
+  _isOpen = signal(false);
+  _tagEdit = signal<TagModel | null>(null);
 
-  // State
-  loading: boolean = false;
-  error: string | null = null;
-  success: string | null = null;
-  isEditMode: boolean = false;
+  loading = signal(false);
+  error = signal<string | null>(null);
+  success = signal<string | null>(null);
 
-  private destroy$ = new Subject<void>();
+  // SERVICES & FORM
+  private fb = inject(FormBuilder);
+  private tagService = inject(TagService);
 
-  constructor(
-      private tagService: TagService,
-    ) { }
-  
-  ngOnInit(): void {
-  }
+  form = this.fb.group({
+    nome: ['', [Validators.required, Validators.minLength(3)]]
+  });
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen'] && this.isOpen) {
-      this.error = null;
-      this.success = null;
-      
-      if (this.tagEdit) {
-        // EDIT MODE
-        this.isEditMode = true;
-        this.populateForm();
-      } else {
-        // CREATE MODE
-        this.isEditMode = false;
-        this.resetForm();
+  constructor() {
+    // EFFETTO: Reset o Popolamento automatico all'apertura
+    effect(() => {
+      if (this._isOpen()) {
+        this.error.set(null);
+        this.success.set(null);
+        
+        const tag = this._tagEdit();
+        if (tag) {
+          this.form.patchValue({ nome: tag.nome });
+        } else {
+          this.form.reset({ nome: '' });
+        }
       }
-    }
+    }, { allowSignalWrites: true });
   }
 
-  populateForm() : void {
-    if (this.tagEdit) {
-      this.nomeTag = this.tagEdit.nome;
-    }
-  }
-
-  resetForm() : void {
-    this.nomeTag = '';
-  }
-
-  onSubmit(): void {
-    // Validazione
-    if (!this.nomeTag) {
-      this.error = 'Compilare il campo nome';
+  onSubmit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
       return;
     }
 
-    this.loading = true;
-    this.error = null;
-    this.success = null;
+    this.loading.set(true);
+    this.error.set(null);
 
-    const tag: any = {
-      id: this.tagEdit?.id || 0,
-      nome: this.nomeTag
+    const formData = this.form.getRawValue();
+
+    // ⚠️ FIX ROBUSTO per TypeScript: id=0 se nuovo, nome='' se null
+    const payload: TagModel = {
+      id: this._tagEdit()?.id ?? 0,
+      nome: formData.nome ?? ''
     };
 
-    console.log('📤 Payload inviato:', tag);  // ← Aggiungi questo per debuggare
+    console.log('📤 Payload Tag:', payload);
 
-    const conto$ = this.isEditMode
-      ? this.tagService.updateTag(this.tagEdit!.id, tag)
-      : this.tagService.createTag(tag);
+    const req$ = this._tagEdit()
+      ? this.tagService.updateTag(payload.id, payload)
+      : this.tagService.createTag(payload);
 
-    conto$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Tag salvato:', response);
-          this.success = this.isEditMode
-            ? 'Tag modificato con successo!'
-            : 'Tag creato con successo!';
-          
-          this.loading = false;
-          
-          setTimeout(() => {
-            this.onClose();
-            this.saved.emit();
-          }, 1000);
-        },
-        error: (error) => {
-          console.error('Errore salvataggio tag:', error);
-          this.error = `Errore: ${error.error?.message || 'Impossibile salvare'}`;
-          this.loading = false;
-        }
-      });
+    req$.subscribe({
+      next: (res) => {
+        this.success.set(this._tagEdit() ? 'Tag modificato!' : 'Tag creato!');
+        this.loading.set(false);
+        setTimeout(() => {
+          this.saved.emit();
+          this.onClose();
+        }, 1000);
+      },
+      error: (err) => {
+        console.error(err);
+        this.error.set(err.error?.message || "Errore durante il salvataggio.");
+        this.loading.set(false);
+      }
+    });
   }
 
-  onClose(): void {
+  onClose() {
     this.close.emit();
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

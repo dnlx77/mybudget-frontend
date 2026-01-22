@@ -1,70 +1,45 @@
 <div class="pagination-section">
-  <!-- Info -->
   <div class="pagination-info">
-    Pagina {{ currentPage }} di {{ totalPages }} ({{ totalCount }} elementi totali)
+    Pagina {{ currentPage() }} di {{ totalPages() }} ({{ totalCount() }} elementi totali)
   </div>
-  
-  <!-- Controlli -->
+
   <div class="pagination-controls">
-    
-    <!-- Precedente -->
-    <button 
-      class="btn-pagination btn-prev"
-      (click)="goToPage(currentPage - 1)"
-      [disabled]="currentPage === 1"
-      title="Pagina precedente"
-    >
+
+    <button class="btn-pagination btn-prev" (click)="onPageClick(currentPage() - 1)" [disabled]="currentPage() === 1"
+      title="Pagina precedente">
       ◀ Precedente
     </button>
 
-    <!-- Prima -->
     @if (showFirstButton()) {
-      <button 
-        class="btn-page"
-        (click)="goToPage(1)"
-        title="Prima pagina"
-      >
-        1
-      </button>
-      @if (showEllipsisBefore()) {
-        <span class="pagination-ellipsis">...</span>
-      }
+    <button class="btn-page" (click)="onPageClick(1)" title="Vai alla prima pagina">
+      1
+    </button>
+
+    @if (showEllipsisBefore()) {
+    <span class="pagination-ellipsis">...</span>
+    }
     }
 
-    <!-- Pagine vicine -->
     <div class="page-numbers">
-      @for (page of getPageNumbers(); track page) {
-        <button 
-          class="btn-page" 
-          [class.active]="page === currentPage"
-          (click)="goToPage(page)"
-        >
-          {{ page }}
-        </button>
+      @for (page of visiblePages(); track page) {
+      <button class="btn-page" [class.active]="page === currentPage()" (click)="onPageClick(page)">
+        {{ page }}
+      </button>
       }
     </div>
 
-    <!-- Ultima -->
     @if (showLastButton()) {
-      @if (showEllipsisAfter()) {
-        <span class="pagination-ellipsis">...</span>
-      }
-      <button 
-        class="btn-page"
-        (click)="goToPage(totalPages)"
-        title="Ultima pagina"
-      >
-        {{ totalPages }}
-      </button>
+    @if (showEllipsisAfter()) {
+    <span class="pagination-ellipsis">...</span>
     }
 
-    <!-- Successiva -->
-    <button 
-      class="btn-pagination btn-next"
-      (click)="goToPage(currentPage + 1)"
-      [disabled]="currentPage === totalPages"
-      title="Pagina successiva"
-    >
+    <button class="btn-page" (click)="onPageClick(totalPages())" title="Vai all'ultima pagina">
+      {{ totalPages() }}
+    </button>
+    }
+
+    <button class="btn-pagination btn-next" (click)="onPageClick(currentPage() + 1)"
+      [disabled]="currentPage() === totalPages()" title="Pagina successiva">
       Successiva ▶
     </button>
 

@@ -1,83 +1,55 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
-/**
- * PaginationComponent - Componente riusabile per paginazione
- * 
- * Uso:
- * <app-pagination 
- *   [currentPage]="currentPage"
- *   [totalPages]="totalPages"
- *   [totalCount]="totalCount"
- *   (pageChange)="goToPage($event)"
- * ></app-pagination>
- * 
- * Nel componente padre:
- * - currentPage: number
- * - totalPages: number
- * - totalCount: number
- * - goToPage(page: number)
- */
 @Component({
   selector: 'app-pagination',
   standalone: true,
+  imports: [CommonModule],
   templateUrl: './pagination.component.html',
   styleUrl: './pagination.component.css',
 })
 export class PaginationComponent {
-  @Input() currentPage: number = 1;
-  @Input() totalPages: number = 1;
-  @Input() totalCount: number = 0;
-  @Output() pageChange = new EventEmitter<number>();
+  
+  // INPUT SIGNALS (Obbligatori e Opzionali)
+  currentPage = input.required<number>();
+  totalPages = input.required<number>();
+  totalCount = input<number>(0);
 
-  /**
-   * Emetti il cambio pagina
-   */
-  goToPage(page: number): void {
-    if (page > 0 && page <= this.totalPages && page !== this.currentPage) {
-      this.pageChange.emit(page);
-    }
-  }
+  // OUTPUT SIGNAL (Nuova sintassi Angular)
+  pageChange = output<number>();
 
-  /**
-   * Ritorna le pagine vicine (currentPage ± 2)
-   */
-  getPageNumbers(): number[] {
+  // COMPUTED SIGNALS (Logica di visualizzazione reattiva)
+  // Calcola quali numeri di pagina mostrare (es. 4, 5, [6], 7, 8)
+  visiblePages = computed(() => {
+    const current = this.currentPage();
+    const total = this.totalPages();
     const pages: number[] = [];
-    const start = Math.max(1, this.currentPage - 2);
-    const end = Math.min(this.totalPages, this.currentPage + 2);
+    
+    const start = Math.max(1, current - 2);
+    const end = Math.min(total, current + 2);
     
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
     return pages;
-  }
+  });
+
+  // Logica per mostrare pulsanti "Prima" / "Ultima" / "..."
+  showFirstButton = computed(() => this.currentPage() > 3);
+  showEllipsisBefore = computed(() => this.currentPage() > 3);
+  
+  showLastButton = computed(() => this.currentPage() < this.totalPages() - 2);
+  showEllipsisAfter = computed(() => this.currentPage() < this.totalPages() - 2);
 
   /**
-   * Mostra ellipsis se ci sono pagine nascoste prima
+   * Gestione click pagina
    */
-  showEllipsisBefore(): boolean {
-    return this.currentPage > 3;
-  }
+  onPageClick(page: number): void {
+    const current = this.currentPage();
+    const total = this.totalPages();
 
-  /**
-   * Mostra ellipsis se ci sono pagine nascoste dopo
-   */
-  showEllipsisAfter(): boolean {
-    return this.currentPage < this.totalPages - 2;
-  }
-
-  /**
-   * Mostra bottone "Prima"
-   */
-  showFirstButton(): boolean {
-    return this.currentPage > 3;
-  }
-
-  /**
-   * Mostra bottone "Ultima"
-   */
-  showLastButton(): boolean {
-    return this.currentPage < this.totalPages - 2;
+    if (page > 0 && page <= total && page !== current) {
+      this.pageChange.emit(page);
+    }
   }
 }

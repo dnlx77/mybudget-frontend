@@ -1,51 +1,53 @@
-<!-- Modal Backdrop -->
-@if (isOpen) {
-<div class="modal-backdrop"></div>
+@if (_isOpen()) {
+<div class="modal-backdrop" (click)="onClose()"></div>
+}
 
-<!-- Modal container-->
+@if (_isOpen()) {
 <div class="modal-container">
-    <!-- Header -->
+
     <div class="modal-header">
-        <h2>{{ isEditMode ? 'Modifica tag' : 'Nuovo tag' }}</h2>
+        <h2>{{ _tagEdit() ? 'Modifica Tag' : 'Nuovo Tag' }}</h2>
+        <button class="close-btn" (click)="onClose()">✕</button>
     </div>
 
-    <!-- Boby -->
     <div class="modal-body">
-        <!-- Messaggio di errore -->
-        @if(error) {
-        <div class="error">{{ error }}</div>
+
+        @if (error()) {
+        <div class="alert alert-error">{{ error() }}</div>
         }
 
-        <!-- Messaggio di successo -->
-        @if(success) {
-        <div class="success">{{ success }}</div>
+        @if (success()) {
+        <div class="alert alert-success">{{ success() }}</div>
         }
 
-        <!-- Form con input del nome -->
-        <div class="form-group">
-            <label for="nome">Nome tag*</label>
-            <input id="nome" type="text" [(ngModel)]="nomeTag" name="nome" placeholder="Es: spesa"
-                [disabled]="loading" />
-        </div>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+            <div class="form-group">
+                <label for="nome">Nome Tag *</label>
+                <input id="nome" type="text" formControlName="nome" placeholder="Es: spesa, bollette..."
+                    [class.input-error]="form.get('nome')?.invalid && form.get('nome')?.touched" />
+
+                @if (form.get('nome')?.invalid && form.get('nome')?.touched) {
+                <span class="error-text">Il nome è obbligatorio (min 3 caratteri).</span>
+                }
+            </div>
+
+        </form>
     </div>
 
-    <!-- Footer -->
     <div class="modal-footer">
-        <button class="btn-cancel" (click)="onClose()" [disabled]="loading">
+        <button class="btn-cancel" (click)="onClose()" [disabled]="loading()">
             Annulla
         </button>
 
-        <button class="btn-save" (click)="onSubmit()" [disabled]="loading">
-            @if (loading) {
+        <button class="btn-save" (click)="onSubmit()" [disabled]="loading()">
+            @if (loading()) {
             Salvataggio...
             } @else {
-            @if (isEditMode) {
-            Aggiorna
-            } @else {
-            Crea
-            }
+            {{ _tagEdit() ? 'Salva Modifiche' : 'Crea Tag' }}
             }
         </button>
     </div>
+
 </div>
 }

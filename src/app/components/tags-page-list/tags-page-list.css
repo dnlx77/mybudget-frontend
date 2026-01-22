@@ -108,7 +108,12 @@
 }
 
 .tags-table td {
-    padding: 0.75rem;
+    vertical-align: middle;
+    /* ⬅️ Importante */
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+    font-size: 0.95rem;
 }
 
 .tags-table td:last-child {
@@ -118,23 +123,42 @@
 /* Azioni */
 .azioni {
     display: flex;
-    gap: 0.5rem;
-    justify-content: center;
+    gap: 0.8rem;
+    justify-content: flex-end;
+    align-items: center;
+    /* ⬅️ FONDAMENTALE: Centra verticalmente le icone tra loro */
 }
 
 .btn-edit,
 .btn-delete {
-    background: none;
+    background: transparent;
     border: none;
-    font-size: 1rem;
+    font-size: 1.2rem;
+    /* Leggermente più grande per le emoji */
     cursor: pointer;
-    padding: 0.25rem;
-    transition: transform 0.2s ease;
+    /* PADDING E LINE-HEIGHT RIDOTTI per centrare l'emoji nel bottone */
+    padding: 6px;
+    line-height: 1;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    /* Usiamo flex anche qui per centrare l'emoji nel suo stesso bottone */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    /* Dimensione fissa per un cerchio perfetto */
+    height: 36px;
+    /* Dimensione fissa per un cerchio perfetto */
 }
 
-.btn-edit:hover,
+.btn-edit:hover {
+    background-color: #e0e7ff;
+    transform: scale(1.1);
+}
+
 .btn-delete:hover {
-    transform: scale(1.2);
+    background-color: #fee;
+    transform: scale(1.1);
 }
 
 /* ============================================================

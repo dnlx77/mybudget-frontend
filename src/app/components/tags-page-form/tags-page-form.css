@@ -1,5 +1,5 @@
 /* ============================================================
-   MODAL BACKDROP
+   MODAL BACKDROP & CONTAINER (Standard)
    ============================================================ */
 .modal-backdrop {
     position: fixed;
@@ -9,11 +9,9 @@
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
+    animation: fadeIn 0.3s ease;
 }
 
-/* ============================================================
-   MODAL CONTAINER
-   ============================================================ */
 .modal-container {
     position: fixed;
     top: 50%;
@@ -21,48 +19,70 @@
     transform: translate(-50%, -50%);
     background-color: white;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     z-index: 1001;
     width: 90%;
     max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     animation: slideUp 0.3s ease-out;
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -40%);
-    }
-
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
-}
-
 /* ============================================================
-   MODAL HEADER
+   HEADER (Gradiente coerente con Conti)
    ============================================================ */
 .modal-header {
     padding: 1.5rem;
+    /* Stesso gradiente usato per i Conti */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .modal-header h2 {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
+    line-height: 1.2;
+}
+
+/* Close Button (Standardizzato e centrato) */
+.close-btn {
+    background: none;
+    /* Rimuove lo sfondo grigio del bottone */
+    border: none;
+    /* Rimuove il bordo */
+    color: white;
+    /* Colore bianco */
+    font-size: 1.5rem;
+    /* Grandezza identica a Conto */
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    padding: 0;
+    /* Rimuove padding interno */
+    line-height: 1;
+    /* Allinea verticalmente il testo */
+    margin: 0;
+}
+
+.close-btn:hover {
+    opacity: 1;
+    /* Rimuovi eventuali background-color all'hover se vuoi solo l'effetto opacità, 
+       oppure mantieni un leggero bianco trasparente se ti piace */
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 /* ============================================================
-   MODAL BODY
+   BODY & FORM INPUTS
    ============================================================ */
 .modal-body {
     padding: 2rem;
+    overflow-y: auto;
+    max-height: 70vh;
 }
 
 .form-group {
@@ -83,7 +103,6 @@
     border: 1px solid #e0e0e0;
     border-radius: 6px;
     font-size: 0.95rem;
-    font-family: inherit;
     transition: all 0.3s ease;
 }
 
@@ -93,49 +112,53 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.form-group input:disabled {
-    background-color: #f8f9fa;
-    color: #999;
-    cursor: not-allowed;
+/* Validazione Errori */
+.input-error {
+    border-color: #c33 !important;
+    background-color: #fff5f5;
 }
 
-/* ============================================================
-   ALERT MESSAGES
-   ============================================================ */
-.error {
+.error-text {
+    color: #c33;
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+/* Alerts (Messaggi globali) */
+.alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.alert-error {
     background-color: #fee;
     color: #c33;
-    padding: 1rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
     border-left: 4px solid #c33;
-    font-size: 0.9rem;
 }
 
-.success {
+.alert-success {
     background-color: #efe;
     color: #3c3;
-    padding: 1rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
     border-left: 4px solid #3c3;
-    font-size: 0.9rem;
 }
 
 /* ============================================================
-   MODAL FOOTER
+   FOOTER & BUTTONS (Coerenti con Conti)
    ============================================================ */
 .modal-footer {
     padding: 1.5rem;
     border-top: 1px solid #f0f0f0;
+    /* Sfondo grigio chiaro e bordo */
+    background-color: #fcfcfc;
+    border-radius: 0 0 12px 12px;
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
 }
 
-/* ============================================================
-   BOTTONI
-   ============================================================ */
+/* Bottone Annulla (Grigio) */
 .btn-cancel {
     background-color: #f0f0f0;
     color: #333;
@@ -152,12 +175,9 @@
     background-color: #e0e0e0;
 }
 
-.btn-cancel:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
+/* Bottone Salva (Gradiente) */
 .btn-save {
+    /* Stesso gradiente dell'header */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
@@ -174,31 +194,49 @@
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.btn-save:disabled {
-    opacity: 0.7;
+button:disabled {
+    opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
+    transform: none !important;
 }
 
 /* ============================================================
-   RESPONSIVE
+   ANIMATIONS & RESPONSIVE
    ============================================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
 @media (max-width: 768px) {
     .modal-container {
         width: 95%;
-        max-width: none;
     }
 
-    .modal-header {
-        padding: 1rem;
-    }
-
-    .modal-body {
+    .modal-header,
+    .modal-body,
+    .modal-footer {
         padding: 1rem;
     }
 
     .modal-footer {
-        padding: 1rem;
         flex-direction: column-reverse;
     }
 
