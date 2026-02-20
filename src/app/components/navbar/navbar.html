@@ -1,12 +1,10 @@
 <nav class="navbar">
     <div class="navbar-container">
 
-        <!-- LOGO/BRAND -->
         <div class="navbar-brand">
             <h1>💰 MyBudget</h1>
         </div>
 
-        <!-- MENU CENTRALE -->
         <div class="navbar-menu">
             <a routerLink="/conti" routerLinkActive="active" class="nav-link">Conti</a>
             <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a>
@@ -14,18 +12,15 @@
             <a routerLink="/grafici" routerLinkActive="active" class="nav-link">Grafici</a>
         </div>
 
-        <!-- SEZIONE DESTRA (Utente + Logout) -->
         <div class="navbar-right">
 
-            <!-- NOME UTENTE -->
-            @if (currentUser) {
+            @if (currentUser()) {
             <div class="user-info">
-                <span class="username">{{ currentUser.name }}</span>
-                <span class="email">({{ currentUser.email }})</span>
+                <span class="username">{{ currentUser()?.name }}</span>
+                <span class="email">({{ currentUser()?.email }})</span>
             </div>
             }
 
-            <!-- BUTTON LOGOUT -->
             <button class="logout-btn" (click)="onLogout()" [disabled]="loading">
                 @if (loading) {
                 Disconnessione...

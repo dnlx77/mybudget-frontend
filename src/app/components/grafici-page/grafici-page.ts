@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxEchartsModule } from 'ngx-echarts';
@@ -7,281 +7,265 @@ import { Subject, combineLatest, switchMap, forkJoin, of, tap, catchError } from
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 // Services
-import { GraficiService, FiltriGraficiParams } from '../../services/grafici'; // Assumiamo esista
+import { GraficiService, FiltriGraficiParams } from '../../services/grafici';
 import { ContoService } from '../../services/conto.service';
 import { EventService } from '../../services/event';
+import { TagService, TagModel } from '../../services/tag.service';
 
 @Component({
   selector: 'app-grafici-page',
   standalone: true,
   imports: [CommonModule, NgxEchartsModule, FormsModule],
   templateUrl: './grafici-page.html',
-  styleUrls: ['./grafici-page.css'] // Uso il tuo CSS esistente
+  styleUrls: ['./grafici-page.css']
 })
 export class GraficiPage implements OnInit {
   
-  // INJECT SERVICES
   private graficiService = inject(GraficiService);
   private contoService = inject(ContoService);
   private eventService = inject(EventService);
+  private tagService = inject(TagService);
 
   // ============================================================
   // STATO (SIGNALS)
   // ============================================================
   
-  // Filtri
+  // Filtri Base
   dataInizio = signal(this.getDataInizioDefault());
   dataFine = signal(this.getDataFineDefault());
   contoId = signal<number | null>(null);
-  
-  // UI State
-  loading = signal(false);
-  error = signal<string | null>(null);
-  
-  // Dati di supporto
-  conti = signal<any[]>([]);
 
-  // Dati Grafici (Options pronte per ECharts)
+  // Filtro TAGS Multiplo + Ricerca
+  availableTags = signal<TagModel[]>([]); // Tutti i tag dal DB
+  selectedTagIds = signal<number[]>([]);  // Quelli attivi
+  searchTerm = signal<string>('');        // 🆕 Testo nella barra di ricerca
+
+  // 🆕 LISTA CALCOLATA (FILTRO INTELLIGENTE)
+  // Mostra un tag se:
+  // 1. Corrisponde alla ricerca (es. "rist" -> "Ristorante")
+  // 2. OPPURE è già selezionato (così non sparisce mentre cerchi altro)
+  visibleTags = computed(() => {
+    const term = this.searchTerm().toLowerCase().trim();
+    const allTags = this.availableTags();
+    const selected = this.selectedTagIds();
+
+    // 1. FILTRO: Se c'è una ricerca, tieni solo quelli che matchano OPPURE sono selezionati
+    // Se non c'è ricerca, prendi tutti (facendo una copia con [...allTags] per poterla ordinare)
+    let filtered = term 
+      ? allTags.filter(tag => tag.nome.toLowerCase().includes(term) || selected.includes(tag.id))
+      : [...allTags];
+
+    // 2. ORDINAMENTO: I selezionati vanno SEMPRE in cima
+    return filtered.sort((a, b) => {
+      const aSelected = selected.includes(a.id);
+      const bSelected = selected.includes(b.id);
+
+      // Se A è selezionato e B no, A vince (viene prima)
+      if (aSelected && !bSelected) return -1;
+      // Se A non è selezionato e B sì, B vince
+      if (!aSelected && bSelected) return 1;
+      
+      // A parità (entrambi selezionati o entrambi no), ordina alfabeticamente
+      return a.nome.localeCompare(b.nome);
+    });
+  });
+
+  // UI State & Charts
+  loading = signal(false);
+  conti = signal<any[]>([]);
   pieChartOption = signal<EChartsOption>({});
   barChartOption = signal<EChartsOption>({});
   lineChartOption = signal<EChartsOption>({});
-
-  // Statistiche e Metadati per la UI
-  statsSpeseTag = signal({ totale: 0, distribuito: 0, numGiorni: 0, periodo: '' });
-  statsGuadagniVsSpese = signal<{totale_guadagni: number, totale_spese: number, saldo_netto: number} | null>(null);
-  statsAndamento = signal<{saldo_iniziale: number, saldo_finale: number, variazione: number} | null>(null);
   
-  // Trigger per reload manuali o esterni (EventService)
+  // Stats
+  statsSpeseTag = signal({ totale: 0, distribuito: 0, numGiorni: 0, periodo: '' });
+  statsGuadagniVsSpese = signal<any>(null);
+  statsAndamento = signal<any>(null);
+  
   private reloadTrigger$ = new Subject<void>();
 
   constructor() {
-    // 1. CARICAMENTO CONTI
-    this.contoService.getConti().pipe(takeUntilDestroyed()).subscribe(res => {
-      if(res.success) this.conti.set(res.data);
-    });
+    this.loadInitialData();
 
-    // 2. SYNC CON EVENT SERVICE (Se cambi un'operazione altrove, ricarica i grafici)
     this.eventService.operazioneChanged$
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.reloadTrigger$.next());
 
-    // 3. PIPELINE REATTIVA PRINCIPALE
+    // PIPELINE REATTIVA
     combineLatest([
       toObservable(this.dataInizio),
       toObservable(this.dataFine),
       toObservable(this.contoId),
-      this.reloadTrigger$.pipe(catchError(() => of(null))) // Fallback sicuro
+      toObservable(this.selectedTagIds),
+      this.reloadTrigger$.pipe(catchError(() => of(null)))
     ]).pipe(
-      tap(() => {
-        this.loading.set(true);
-        this.error.set(null);
-      }),
-      switchMap(([start, end, conto, _]) => {
-        
+      tap(() => this.loading.set(true)),
+      switchMap(([start, end, conto, tags, _]) => {
         const params: FiltriGraficiParams = {
           data_inizio: start,
           data_fine: end,
-          conto_id: conto
+          conto_id: conto,
+          tag_ids: tags.length > 0 ? tags : undefined
         };
-
-        // Prepariamo le richieste
-        const requests: any = {
+        return forkJoin({
           spese: this.graficiService.getSpesePerTag(params).pipe(catchError(() => of({ success: false }))),
           guadagni: this.graficiService.getGuadagniVsSpese(params).pipe(catchError(() => of({ success: false }))),
-          // ORA CHIEDIAMO SEMPRE L'ANDAMENTO (anche se conto è null)
           andamento: this.graficiService.getAndamentoSaldo(params).pipe(catchError(() => of({ success: false })))
-        };
-
-        return forkJoin(requests);
+        });
       }),
       takeUntilDestroyed()
     ).subscribe((results: any) => {
       this.loading.set(false);
-      
-      // ELABORAZIONE RISULTATI
-      
-      // 1. Spese per Tag
-      if (results.spese.success && results.spese.data.length > 0) {
-        this.pieChartOption.set(this.buildPieChartOption(results.spese.data));
-        this.statsSpeseTag.set({
-          totale: Number(results.spese.totale_generale) || 0,
-          distribuito: Number(results.spese.totale_distribuito) || 0,
-          numGiorni: results.spese.filtri.giorni,
-          periodo: `${this.formatDateIT(this.dataInizio())} - ${this.formatDateIT(this.dataFine())}`
-        });
-      } else {
-         // Gestione empty state...
-         this.statsSpeseTag.set({ totale: 0, distribuito: 0, numGiorni: 0, periodo: '' });
-         this.pieChartOption.set({});
-      }
-
-      // 2. Guadagni vs Spese
-      if (results.guadagni.success && results.guadagni.data.length > 0) {
-        this.barChartOption.set(this.buildBarChartOption(results.guadagni.data));
-        this.statsGuadagniVsSpese.set(results.guadagni.statistiche);
-      } else {
-        this.statsGuadagniVsSpese.set(null);
-        this.barChartOption.set({});
-      }
-
-      // 3. Andamento (Opzionale)
-      if (results.andamento && results.andamento.success && results.andamento.data.length > 0) {
-        this.lineChartOption.set(this.buildLineChartOption(results.andamento.data, results.andamento.conto?.nome));
-        this.statsAndamento.set(results.andamento.statistiche);
-      } else {
-        this.statsAndamento.set(null);
-        this.lineChartOption.set({});
-      }
+      this.updateCharts(results);
     });
 
-    // Trigger iniziale
     setTimeout(() => this.reloadTrigger$.next(), 0);
   }
 
-  ngOnInit(): void {
-    // Initialization moved to constructor for Signals pattern
+  ngOnInit(): void {}
+
+  loadInitialData() {
+    this.contoService.getConti().pipe(takeUntilDestroyed()).subscribe(res => {
+      if(res.success) this.conti.set(res.data);
+    });
+    this.tagService.getTags().pipe(takeUntilDestroyed()).subscribe(res => {
+      if(res.success) this.availableTags.set(res.data);
+    });
   }
 
   // ============================================================
-  // ACTIONS (Aggiornano solo i Signal -> Triggerano la Pipeline)
+  // LOGICA GESTIONE TAGS
   // ============================================================
 
-  impostaPeriodo(tipo: 'ultimi7' | 'ultimi30' | 'questoMese' | 'questoAnno'): void {
-    const oggi = new Date();
-    let start = '';
-    const end = this.formatDate(oggi);
+  onSearchTag(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.searchTerm.set(input.value);
+  }
 
-    switch (tipo) {
-      case 'ultimi7':
-        start = this.formatDate(new Date(oggi.getTime() - 7 * 24 * 60 * 60 * 1000));
+  toggleTag(id: number) {
+    this.selectedTagIds.update(ids => {
+        if (ids.includes(id)) return ids.filter(x => x !== id);
+        return [...ids, id];
+    });
+    // Opzionale: Se vuoi pulire la ricerca dopo aver selezionato, scommenta:
+    // this.searchTerm.set(''); 
+  }
+
+  isTagSelected(id: number): boolean {
+    return this.selectedTagIds().includes(id);
+  }
+
+  clearTags() {
+    this.selectedTagIds.set([]);
+    this.searchTerm.set('');
+  }
+
+  // ============================================================
+  // HELPERS DATE & CHARTS (Invariati)
+  // ============================================================
+
+  impostaPeriodo(tipo: 'ultimi7' | 'ultimi30' | 'questoMese' | 'questoAnno' | 'annoPrecedente' | 'tutto') {
+    const oggi = new Date();
+    oggi.setHours(12, 0, 0, 0);
+
+    let inizio = new Date(oggi);
+    let fine = new Date(oggi);
+
+    switch(tipo) {
+      case 'ultimi7': inizio.setDate(oggi.getDate() - 7); break;
+      case 'ultimi30': inizio.setDate(oggi.getDate() - 30); break;
+      case 'questoMese': inizio = new Date(oggi.getFullYear(), oggi.getMonth(), 1, 12, 0, 0); break;
+      case 'questoAnno': inizio = new Date(oggi.getFullYear(), 0, 1, 12, 0, 0); break;
+      case 'annoPrecedente':
+        inizio = new Date(oggi.getFullYear() - 1, 0, 1, 12, 0, 0);
+        fine = new Date(oggi.getFullYear() - 1, 11, 31, 12, 0, 0);
         break;
-      case 'ultimi30':
-        start = this.formatDate(new Date(oggi.getTime() - 30 * 24 * 60 * 60 * 1000));
-        break;
-      case 'questoMese':
-        start = this.formatDate(new Date(oggi.getFullYear(), oggi.getMonth(), 1));
-        break;
-      case 'questoAnno':
-        start = this.formatDate(new Date(oggi.getFullYear(), 0, 1));
+      case 'tutto':
+        // Trucco: Impostiamo una data antichissima.
+        // Il backend (GraficiController) riconoscerà che < 2000 e la sostituirà
+        // con la data della prima operazione nel DB.
+        inizio = new Date(1970, 0, 1, 12, 0, 0);
         break;
     }
 
-    // Aggiornamento atomico (triggera 1 sola richiesta grazie al debounce/sync di combineLatest)
-    this.dataInizio.set(start);
-    this.dataFine.set(end);
+    this.dataInizio.set(this.formatDateLocal(inizio));
+    this.dataFine.set(this.formatDateLocal(fine));
   }
 
-  resetFiltri(): void {
-    this.dataInizio.set(this.getDataInizioDefault());
-    this.dataFine.set(this.getDataFineDefault());
+  resetFiltri() {
     this.contoId.set(null);
+    this.impostaPeriodo('questoMese');
+    this.clearTags();
   }
-
-  // ============================================================
-  // HELPERS & CHART BUILDERS (Logica invariata ma ottimizzata)
-  // ============================================================
 
   private getDataInizioDefault(): string {
-    const data = new Date();
-    data.setDate(data.getDate() - 30);
-    return this.formatDate(data);
+    const d = new Date();
+    d.setDate(1); 
+    return this.formatDateLocal(d);
   }
 
   private getDataFineDefault(): string {
-    return this.formatDate(new Date());
+    return this.formatDateLocal(new Date());
   }
 
-  private formatDate(date: Date): string {
+  private formatDateLocal(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
-  private formatDateIT(dateString: string): string {
-    if(!dateString) return '';
-    const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
+  private formatDateIT(isoDate: string): string {
+    if(!isoDate) return '';
+    const parts = isoDate.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
-  private formatCurrency(value: number): string {
-    return value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
+  
+  private updateCharts(results: any) {
+     if (results.spese.success) {
+        this.pieChartOption.set(this.buildPieChartOption(results.spese.data));
+        
+        // 🆕 AGGIORNAMENTO SMART DEL CALENDARIO
+        // Se il backend ha corretto la data (es. ho chiesto 1970 ma lui ha usato 2023),
+        // aggiorno l'input grafico per mostrare la data reale all'utente.
+        const dataRealeInizio = results.spese.filtri?.inizio;
+        if (dataRealeInizio && dataRealeInizio !== this.dataInizio()) {
+            // Aggiorno il signal (questo potrebbe rilanciare la query, ma i dati saranno identici, quindi si stabilizza subito)
+            this.dataInizio.set(dataRealeInizio);
+        }
 
-  // --- CHART BUILDERS (Ho copiato la tua logica ottima, adattandola leggermente) ---
+        this.statsSpeseTag.set({
+          totale: Number(results.spese.totale_generale) || 0,
+          distribuito: 0, 
+          numGiorni: results.spese.filtri?.giorni || 0,
+          periodo: `${this.formatDateIT(this.dataInizio())} - ${this.formatDateIT(this.dataFine())}`
+        });
+     }
+     if (results.guadagni.success) {
+        this.barChartOption.set(this.buildBarChartOption(results.guadagni.data));
+        this.statsGuadagniVsSpese.set(results.guadagni.statistiche);
+     }
+     if (results.andamento.success) {
+        this.lineChartOption.set(this.buildLineChartOption(results.andamento.data, results.andamento.conto?.nome));
+        this.statsAndamento.set(results.andamento.statistiche);
+     }
+  }
 
   private buildPieChartOption(data: any[]): EChartsOption {
+    if (!data || data.length === 0) return {};
     return {
-      tooltip: {
-        trigger: 'item',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#e1e5e8',
-        borderWidth: 1,
-        textStyle: { color: '#333', fontSize: 13 },
-        formatter: (params: any) => {
-          const valore = this.formatCurrency(params.value);
-          const percent = params.percent.toFixed(1);
-          return `
-            <div style="margin-bottom:4px; font-weight:700; color:${params.color}">${params.name}</div>
-            <div style="display:flex; justify-content:space-between; gap:15px">
-              <span>Importo:</span> <strong>€${valore}</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; gap:15px">
-               <span>Incidenza:</span> <strong>${percent}%</strong>
-            </div>
-            <div style="font-size:11px; color:#666; margin-top:4px">
-               (${params.data.num_operazioni} operazioni)
-            </div>
-          `;
-        }
-      },
-      legend: {
-        type: 'scroll', // ⬅️ FONDAMENTALE: Rende la legenda scrollabile se ci sono troppe voci
-        orient: 'horizontal',
-        bottom: 0,
-        left: 'center',
-        itemGap: 15,
-        pageIconColor: '#667eea',
-        pageTextStyle: { color: '#666' }
-      },
+      tooltip: { trigger: 'item', formatter: '{b}: €{c} ({d}%)' },
+      legend: { bottom: '0%', left: 'center' },
       series: [{
-        name: 'Spese',
-        type: 'pie',
-        radius: ['40%', '65%'], // Leggermente più piccolo per lasciare spazio
-        center: ['50%', '42%'], // Spostato leggermente in alto per far spazio alla legenda
-        avoidLabelOverlap: true, // ⬅️ Evita che le scritte si sovrappongano
-        itemStyle: {
-          borderRadius: 6,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
-        label: {
-          show: true,
-          formatter: '{b}: {d}%', // Mostra "Nome: %"
-          minMargin: 5,
-          edgeDistance: 10,
-          lineHeight: 15,
-          color: '#4a5568'
-        },
-        labelLine: {
-          length: 15,
-          length2: 0,
-          maxSurfaceAngle: 80
-        },
-        emphasis: {
-          scale: true,
-          scaleSize: 10,
-          label: {
-            show: true,
-            fontSize: 14,
-            fontWeight: 'bold'
-          }
-        },
-        data: data.map(item => ({
-          value: item.totale,
-          name: item.nome,
-          num_operazioni: item.num_operazioni
-        }))
+          name: 'Spese',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false },
+          emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+          data: data.map(item => ({ value: item.totale, name: item.nome }))
       }]
     };
   }
@@ -289,9 +273,10 @@ export class GraficiPage implements OnInit {
   private buildBarChartOption(data: any[]): EChartsOption {
     return {
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      legend: { top: 'bottom' },
-      grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
-      xAxis: { type: 'category', data: data.map(d => d.mese) },
+      legend: { top: '5%' },
+      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+      // 🆕 Ora usiamo d.data invece di d.mese
+      xAxis: { type: 'category', data: data.map(d => d.data) },
       yAxis: { type: 'value' },
       series: [
         { name: 'Guadagni', type: 'bar', data: data.map(d => d.guadagni), itemStyle: { color: '#43e97b', borderRadius: [4, 4, 0, 0] } },
@@ -301,31 +286,22 @@ export class GraficiPage implements OnInit {
   }
 
   private buildLineChartOption(data: any[], nomeConto: string = ''): EChartsOption {
-    // Se nomeConto è vuoto, stiamo vedendo il totale
     const serieName = nomeConto || 'Patrimonio Totale';
-    
     return {
       tooltip: { trigger: 'axis' },
       grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
       xAxis: { type: 'category', data: data.map(d => d.data) },
-      yAxis: { 
-          type: 'value', 
-          // Scala dinamica per vedere meglio le variazioni
-          min: (value) => Math.floor(value.min - (value.max - value.min) * 0.1) 
-      },
+      yAxis: { type: 'value', scale: true },
       series: [{
-        name: serieName,
-        type: 'line',
-        smooth: true,
-        data: data.map(d => d.saldo),
-        showSymbol: false, // Più pulito
-        areaStyle: {
-          color: {
-            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [{ offset: 0, color: 'rgba(102, 126, 234, 0.5)' }, { offset: 1, color: 'rgba(102, 126, 234, 0)' }]
-          }
-        },
-        itemStyle: { color: '#667eea' }
+          name: serieName,
+          type: 'line',
+          data: data.map(d => d.saldo),
+          smooth: true,
+          symbol: 'none',
+          areaStyle: {
+              color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(102, 126, 234, 0.5)' }, { offset: 1, color: 'rgba(102, 126, 234, 0.0)' }] }
+          },
+          lineStyle: { width: 3, color: '#667eea' }
       }]
     };
   }

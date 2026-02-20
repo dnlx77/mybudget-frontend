@@ -12,6 +12,8 @@
             <button class="btn-quick" (click)="impostaPeriodo('ultimi30')">📅 30 Giorni</button>
             <button class="btn-quick" (click)="impostaPeriodo('questoMese')">📅 Questo Mese</button>
             <button class="btn-quick" (click)="impostaPeriodo('questoAnno')">📅 Quest'Anno</button>
+            <button class="btn-quick" (click)="impostaPeriodo('annoPrecedente')">⏮️ Anno Scorso</button>
+            <button class="btn-quick" (click)="impostaPeriodo('tutto')">♾️ Tutto</button>
         </div>
 
         <div class="custom-filters">
@@ -29,7 +31,7 @@
             <div class="form-group">
                 <label>Conto</label>
                 <select [ngModel]="contoId()" (ngModelChange)="contoId.set($event)" class="form-control">
-                    <option [ngValue]="null">Tutti i conti (Patrimonio Totale)</option>
+                    <option [ngValue]="null">Tutti i conti</option>
                     @for (conto of conti(); track conto.id) {
                     <option [ngValue]="conto.id">{{ conto.nome }}</option>
                     }
@@ -40,26 +42,41 @@
                 <button class="btn-secondary" (click)="resetFiltri()">🔄 Reset</button>
             </div>
         </div>
+
+        <div class="tags-filter-area">
+
+            <div class="tags-header">
+                <div class="tags-search-wrapper">
+                    <label>Filtra Categorie:</label>
+                    <input type="text" class="search-tag-input" placeholder="Cerca tag..." [value]="searchTerm()"
+                        (input)="onSearchTag($event)">
+                </div>
+
+                @if (selectedTagIds().length > 0) {
+                <button class="btn-clear-tags" (click)="clearTags()">✕ Rimuovi filtri
+                    ({{selectedTagIds().length}})</button>
+                }
+            </div>
+
+            <div class="tags-cloud">
+                @for (tag of visibleTags(); track tag.id) {
+                <button class="tag-chip" [class.active]="isTagSelected(tag.id)" (click)="toggleTag(tag.id)">
+                    {{ tag.nome }}
+                </button>
+                }
+
+                @if (visibleTags().length === 0) {
+                <span class="no-tags-found">Nessun tag trovato.</span>
+                }
+            </div>
+        </div>
+
     </div>
 
     @if (loading()) {
-    <div class="loading-section">
+    <div class="loading-overlay">
         <div class="spinner"></div>
-        <p>Analisi in corso...</p>
-    </div>
-    }
-
-    @if (!loading()) {
-
-    <div class="info-section">
-        <div class="info-card">
-            <span class="info-label">Periodo Analizzato</span>
-            <span class="info-value">{{ statsSpeseTag().periodo }}</span>
-        </div>
-        <div class="info-card">
-            <span class="info-label">Totale Uscite</span>
-            <span class="info-value totale">€{{ statsSpeseTag().totale | number:'1.2-2' }}</span>
-        </div>
+        <p>Elaborazione dati in corso...</p>
     </div>
     }
 
@@ -67,21 +84,21 @@
 
         <div class="chart-card">
             <div class="chart-title">
-                <h3>Spese per Categoria</h3>
+                <h3>Distribuzione Spese</h3>
+                <span class="periodo-badge">{{ statsSpeseTag().periodo }}</span>
             </div>
 
             @if (statsSpeseTag().totale > 0) {
             <div echarts [options]="pieChartOption()" [autoResize]="true" class="chart-container"></div>
-
             <div class="chart-stats">
                 <div class="stat">
-                    <span class="stat-label">Totale</span>
-                    <span class="stat-value">€{{ statsSpeseTag().totale | number:'1.0-0' }}</span>
+                    <span class="stat-label">Totale Speso</span>
+                    <span class="stat-value negative">€{{ statsSpeseTag().totale | number:'1.2-2' }}</span>
                 </div>
             </div>
             } @else {
             <div class="placeholder-content">
-                <span class="placeholder-icon">📉</span>
+                <span class="placeholder-icon">🍰</span>
                 <p class="placeholder-subtitle">Nessuna spesa nel periodo</p>
             </div>
             }
@@ -94,15 +111,18 @@
 
             @if (statsGuadagniVsSpese(); as stats) {
             <div echarts [options]="barChartOption()" [autoResize]="true" class="chart-container"></div>
-
             <div class="chart-stats">
                 <div class="stat">
                     <span class="stat-label">Entrate</span>
-                    <span class="stat-value positive">€{{ stats.totale_guadagni | number:'1.0-0' }}</span>
+                    <span class="stat-value positive">+€{{ stats.totale_guadagni | number:'1.0-0' }}</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-label">Saldo</span>
-                    <span class="stat-value" [class.positive]="stats.saldo_netto > 0"
+                    <span class="stat-label">Uscite</span>
+                    <span class="stat-value negative">-€{{ stats.totale_spese | number:'1.0-0' }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Netto</span>
+                    <span class="stat-value" [class.positive]="stats.saldo_netto >= 0"
                         [class.negative]="stats.saldo_netto < 0">
                         €{{ stats.saldo_netto | number:'1.0-0' }}
                     </span>
@@ -116,7 +136,7 @@
             }
         </div>
 
-        <div class="chart-card">
+        <div class="chart-card full-width">
             <div class="chart-title">
                 <h3>{{ contoId() ? 'Andamento Saldo Conto' : 'Patrimonio Totale' }}</h3>
             </div>
@@ -148,6 +168,5 @@
             </div>
             }
         </div>
-
     </div>
 </div>

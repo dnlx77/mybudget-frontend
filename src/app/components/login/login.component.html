@@ -1,74 +1,57 @@
 <div class="login-container">
   <div class="login-card">
-    
-    <!-- Header -->
+
     <div class="login-header">
       <h1>💰 MyBudget</h1>
       <h2>Accedi al Tuo Account</h2>
       <p class="subtitle">Gestisci le tue finanze in modo intelligente</p>
     </div>
 
-    <!-- Form -->
-    <form (ngSubmit)="onLogin()" class="login-form">
-      
-      <!-- Error Alert -->
-      @if (error) {
-        <div class="alert alert-error">
-          <strong>Errore:</strong> {{ error }}
-        </div>
+    <form [formGroup]="form" (ngSubmit)="onLogin()" class="login-form">
+
+      @if (error()) {
+      <div class="alert alert-error">
+        <strong>Errore:</strong> {{ error() }}
+      </div>
       }
 
-      <!-- Email -->
       <div class="form-group">
         <label for="email">Email *</label>
-        <input
-          id="email"
-          type="email"
-          [(ngModel)]="email"
-          name="email"
-          placeholder="Es: mario@example.com"
-          required
-          [disabled]="loading"
-          autofocus
-        />
-        @if (getFieldError('email')) {
-          <small class="field-error">{{ getFieldError('email') }}</small>
+        <input id="email" type="email" formControlName="email" placeholder="Es: mario@example.com"
+          [class.input-error]="form.get('email')?.invalid && form.get('email')?.touched" autofocus />
+
+        @if (form.get('email')?.invalid && form.get('email')?.touched) {
+        <small class="field-error">
+          @if (form.get('email')?.hasError('required')) { L'email è obbligatoria }
+          @if (form.get('email')?.hasError('email')) { Inserisci un'email valida }
+        </small>
         }
       </div>
 
-      <!-- Password -->
       <div class="form-group">
         <label for="password">Password *</label>
-        <input
-          id="password"
-          type="password"
-          [(ngModel)]="password"
-          name="password"
-          placeholder="Inserisci la tua password"
-          required
-          [disabled]="loading"
-        />
-        @if (getFieldError('password')) {
-          <small class="field-error">{{ getFieldError('password') }}</small>
+        <input id="password" type="password" formControlName="password" placeholder="Inserisci la tua password"
+          [class.input-error]="form.get('password')?.invalid && form.get('password')?.touched" />
+
+        @if (form.get('password')?.invalid && form.get('password')?.touched) {
+        <small class="field-error">La password è obbligatoria</small>
         }
       </div>
 
-      <!-- Submit Button -->
-      <button type="submit" class="btn-login" [disabled]="loading">
-        @if (loading) {
-          ⏳ Accesso in corso...
+      <button type="submit" class="btn-login" [disabled]="form.invalid || loading()">
+        @if (loading()) {
+        ⏳ Accesso in corso...
         } @else {
-          🔓 Accedi
+        🔓 Accedi
         }
       </button>
 
     </form>
 
-    <!-- Link alla Registrazione -->
     <div class="login-footer">
       <p>
         Non hai un account?
-        <button type="button" class="link-button" (click)="goToRegister()" [disabled]="loading">
+        <button type="button" class="link-button" (click)="goToRegister()" [disabled]="loading()">
           Registrati qui
         </button>
       </p>

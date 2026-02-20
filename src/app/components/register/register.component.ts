@@ -1,130 +1,76 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule], // ⬅️ Reactive Forms
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent {
   
-  name: string = '';
-  email: string = '';
-  password: string = '';
-  password_confirmation: string = '';
-  
-  loading: boolean = false;
-  error: string | null = null;
-  errors: { [key: string]: string[] } = {};
+  // DEPENDENCIES
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private fb = inject(FormBuilder);
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) { }
+  // STATE SIGNALS
+  loading = signal(false);
+  error = signal<string | null>(null);
 
-  ngOnInit(): void {
-    console.log('🟢 RegisterComponent inizializzato');
-  }
+  // REACTIVE FORM
+  form = this.fb.group({
+    name: ['', [Validators.required, Validators.minLength(3)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', [Validators.required]]
+  }, { validators: this.passwordMatchValidator }); // ⬅️ Validatore di gruppo per il match
 
-  validateForm(): boolean {
-    this.error = null;
-    this.errors = {};
-
-    if (!this.name.trim()) {
-      this.error = 'Il nome è obbligatorio';
-      return false;
-    }
-
-    if (!this.email.trim()) {
-      this.error = 'L\'email è obbligatoria';
-      return false;
-    }
-
-    if (!this.email.includes('@')) {
-      this.error = 'L\'email non è valida';
-      return false;
-    }
-
-    if (!this.password) {
-      this.error = 'La password è obbligatoria';
-      return false;
-    }
-
-    if (this.password.length < 8) {
-      this.error = 'La password deve essere almeno 8 caratteri';
-      return false;
-    }
-
-    if (this.password !== this.password_confirmation) {
-      this.error = 'Le password non coincidono';
-      return false;
-    }
-
-    return true;
+  // VALIDATORE CUSTOM: Password Match
+  passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password')?.value;
+    const confirm = control.get('confirmPassword')?.value;
+    
+    // Se non coincidono, ritorna l'errore 'mismatch'
+    return password && confirm && password !== confirm ? { mismatch: true } : null;
   }
 
   onRegister(): void {
-    console.log('📝 Tentativo di registrazione');
-
-    if (!this.validateForm()) {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched(); // Mostra errori se l'utente clicca subito
       return;
     }
 
-    this.loading = true;
-    this.error = null;
-    this.errors = {};
+    this.loading.set(true);
+    this.error.set(null);
 
-    const registerData = {
-      name: this.name.trim(),
-      email: this.email.trim(),
-      password: this.password,
-      password_confirmation: this.password_confirmation,
+    const { name, email, password, confirmPassword } = this.form.getRawValue();
+
+    // Mapping per Laravel: confirmPassword -> password_confirmation
+    const payload = {
+      name: name!,
+      email: email!,
+      password: password!,
+      password_confirmation: confirmPassword!
     };
 
-    console.log('📤 Invio registrazione:', { name: registerData.name, email: registerData.email });
+    console.log('📤 Invio registrazione:', { name, email });
 
-    this.authService.register(registerData).subscribe({
+    this.authService.register(payload).subscribe({
       next: (response) => {
-        console.log('✅ Registrazione avvenuta:', response);
-        
-        if (response.token) {
-          localStorage.setItem('auth_token', response.token);
-          console.log('💾 Token salvato');
-          
-          // Reindirizza al dashboard
-          setTimeout(() => {
-            this.router.navigate(['/dashboard']);
-          }, 500);
-        }
-        
-        this.loading = false;
+        console.log('✅ Registrazione completata:', response);
+        this.loading.set(false);
+        // Login automatico avvenuto (token salvato nel service), andiamo alla dashboard
+        this.router.navigate(['/dashboard']);
       },
-      error: (error) => {
-        console.error('❌ Errore registrazione:', error);
-        this.loading = false;
-
-        // Gestisci errori di validazione (422)
-        if (error.status === 422 && error.error?.errors) {
-          this.errors = error.error.errors;
-          const firstErrorKey = Object.keys(this.errors)[0];
-          const firstErrorMessage = this.errors[firstErrorKey][0];
-          this.error = firstErrorMessage;
-        }
-        // Gestisci errori generici
-        else if (error.error?.error) {
-          this.error = error.error.error;
-        } else if (error.error?.message) {
-          this.error = error.error.message;
-        } else if (error.status === 500) {
-          this.error = 'Errore del server. Contatta l\'amministratore';
-        } else {
-          this.error = 'Errore nella registrazione';
-        }
+      error: (err) => {
+        console.error('❌ Errore registrazione:', err);
+        this.loading.set(false);
+        this.handleError(err);
       }
     });
   }
@@ -133,10 +79,17 @@ export class RegisterComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  getFieldError(fieldName: string): string | null {
-    if (this.errors[fieldName]) {
-      return this.errors[fieldName][0];
+  // Gestione Errori Backend (Preservata la tua logica originale)
+  private handleError(error: any) {
+    if (error.status === 422 && error.error?.errors) {
+      // Prende il primo errore di validazione (es. "Email già in uso")
+      const firstErrorKey = Object.keys(error.error.errors)[0];
+      const firstErrorMessage = error.error.errors[firstErrorKey][0];
+      this.error.set(firstErrorMessage);
+    } else if (error.status === 500) {
+      this.error.set('Errore del server. Contatta l\'amministratore');
+    } else {
+      this.error.set(error.error?.message || 'Errore durante la registrazione.');
     }
-    return null;
   }
 }

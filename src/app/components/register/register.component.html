@@ -1,105 +1,70 @@
 <div class="register-container">
   <div class="register-card">
-    
-    <!-- Header -->
+
     <div class="register-header">
       <h1>💰 MyBudget</h1>
       <h2>Crea un Nuovo Account</h2>
       <p class="subtitle">Gestisci le tue finanze in modo intelligente</p>
     </div>
 
-    <!-- Form -->
-    <form (ngSubmit)="onRegister()" class="register-form">
-      
-      <!-- Error Alert -->
-      @if (error) {
-        <div class="alert alert-error">
-          <strong>Errore:</strong> {{ error }}
-        </div>
+    <form [formGroup]="form" (ngSubmit)="onRegister()" class="register-form">
+
+      @if (error()) {
+      <div class="alert alert-error">
+        <strong>Errore:</strong> {{ error() }}
+      </div>
       }
 
-      <!-- Name -->
       <div class="form-group">
         <label for="name">Nome Completo *</label>
-        <input
-          id="name"
-          type="text"
-          [(ngModel)]="name"
-          name="name"
-          placeholder="Es: Mario Rossi"
-          required
-          [disabled]="loading"
-          autofocus
-        />
-        @if (getFieldError('name')) {
-          <small class="field-error">{{ getFieldError('name') }}</small>
+        <input id="name" type="text" formControlName="name" placeholder="Es: Mario Rossi"
+          [class.input-error]="form.get('name')?.invalid && form.get('name')?.touched" autofocus />
+        @if (form.get('name')?.invalid && form.get('name')?.touched) {
+        <small class="field-error">Inserisci un nome valido (min 3 caratteri)</small>
         }
       </div>
 
-      <!-- Email -->
       <div class="form-group">
         <label for="email">Email *</label>
-        <input
-          id="email"
-          type="email"
-          [(ngModel)]="email"
-          name="email"
-          placeholder="Es: mario@example.com"
-          required
-          [disabled]="loading"
-        />
-        @if (getFieldError('email')) {
-          <small class="field-error">{{ getFieldError('email') }}</small>
+        <input id="email" type="email" formControlName="email" placeholder="Es: mario@example.com"
+          [class.input-error]="form.get('email')?.invalid && form.get('email')?.touched" />
+        @if (form.get('email')?.invalid && form.get('email')?.touched) {
+        <small class="field-error">Inserisci un'email valida</small>
         }
       </div>
 
-      <!-- Password -->
       <div class="form-group">
-        <label for="password">Password * <small>(minimo 8 caratteri)</small></label>
-        <input
-          id="password"
-          type="password"
-          [(ngModel)]="password"
-          name="password"
-          placeholder="Almeno 8 caratteri"
-          required
-          [disabled]="loading"
-        />
-        @if (getFieldError('password')) {
-          <small class="field-error">{{ getFieldError('password') }}</small>
+        <label for="password">Password * <small>(min 8 caratteri)</small></label>
+        <input id="password" type="password" formControlName="password" placeholder="La tua password segreta"
+          [class.input-error]="form.get('password')?.invalid && form.get('password')?.touched" />
+        @if (form.get('password')?.invalid && form.get('password')?.touched) {
+        <small class="field-error">La password deve essere almeno 8 caratteri</small>
         }
       </div>
 
-      <!-- Password Confirmation -->
       <div class="form-group">
-        <label for="password_confirmation">Conferma Password *</label>
-        <input
-          id="password_confirmation"
-          type="password"
-          [(ngModel)]="password_confirmation"
-          name="password_confirmation"
-          placeholder="Ripeti la password"
-          required
-          [disabled]="loading"
-        />
+        <label for="confirmPassword">Conferma Password *</label>
+        <input id="confirmPassword" type="password" formControlName="confirmPassword" placeholder="Ripeti la password"
+          [class.input-error]="(form.get('confirmPassword')?.touched && form.hasError('mismatch'))" />
+        @if (form.hasError('mismatch') && form.get('confirmPassword')?.touched) {
+        <small class="field-error">Le password non coincidono</small>
+        }
       </div>
 
-      <!-- Submit Button -->
-      <button type="submit" class="btn-register" [disabled]="loading">
-        @if (loading) {
-          ⏳ Registrazione in corso...
+      <button type="submit" class="btn-register" [disabled]="form.invalid || loading()">
+        @if (loading()) {
+        ⏳ Creazione account...
         } @else {
-          ✅ Registrati
+        🚀 Registrati
         }
       </button>
 
     </form>
 
-    <!-- Link al Login -->
     <div class="register-footer">
       <p>
         Hai già un account?
-        <button type="button" class="link-button" (click)="goToLogin()" [disabled]="loading">
+        <button type="button" class="link-button" (click)="goToLogin()" [disabled]="loading()">
           Accedi qui
         </button>
       </p>

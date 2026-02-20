@@ -1,4 +1,6 @@
-/* Modal Backdrop */
+/* =========================================
+   1. MODAL BACKDROP & ANIMATIONS
+   ========================================= */
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -20,7 +22,9 @@
     }
 }
 
-/* Modal Container */
+/* =========================================
+   2. MODAL STRUCTURE (Container, Header, Body, Footer)
+   ========================================= */
 .modal-container {
     position: fixed;
     top: 50%;
@@ -47,7 +51,6 @@
     }
 }
 
-/* Modal Content */
 .modal-content {
     background: white;
     border-radius: 12px;
@@ -58,10 +61,8 @@
     overflow: hidden;
 }
 
-/* Modal Header */
 .modal-header {
     padding: 1.5rem;
-    /* Gradiente Viola */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-radius: 12px 12px 0 0;
@@ -76,10 +77,8 @@
     font-weight: 700;
     line-height: 1.2;
     color: white;
-    /* Assicura che il testo sia bianco */
 }
 
-/* Close Button (Stile "X" pulito) */
 .close-btn {
     background: none;
     border: none;
@@ -98,7 +97,6 @@
     text-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Modal Body */
 .modal-body {
     flex: 1;
     padding: 1.5rem;
@@ -107,7 +105,47 @@
     min-height: 0;
 }
 
-/* Alert */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 2px solid #f0f0f0;
+    background-color: #f8f9fa;
+}
+
+/* =========================================
+   3. SCROLLBARS
+   ========================================= */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.tag-suggestions::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tag-suggestions::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+}
+
+/* =========================================
+   4. FORM ELEMENTS & ALERTS
+   ========================================= */
 .alert {
     padding: 1rem;
     border-radius: 8px;
@@ -128,14 +166,12 @@
     border-left: 4px solid #3c3;
 }
 
-/* Loading Text */
 .loading-text {
     text-align: center;
     color: #999;
     padding: 2rem;
 }
 
-/* Form Groups */
 .form-group {
     margin-bottom: 1.5rem;
     display: flex;
@@ -159,6 +195,8 @@
     font-size: 0.95rem;
     font-family: inherit;
     transition: all 0.3s ease;
+    box-sizing: border-box;
+    /* Previene sbavature fuori dai bordi */
 }
 
 .form-group input:focus,
@@ -182,7 +220,44 @@
     min-height: 80px;
 }
 
-/* Tag Search Container */
+/* Layout Grid per Importo e Data (SU DESKTOP) */
+.form-row-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* =========================================
+   5. TRANSFER & ERRORS
+   ========================================= */
+.transfer-group {
+    background-color: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    margin-bottom: 1.5rem;
+}
+
+.badge-optional {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: normal;
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+.error-text {
+    color: #c33;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
+}
+
+/* =========================================
+   6. TAGS SEARCH & SUGGESTIONS
+   ========================================= */
 .tag-search-container {
     display: flex;
     flex-wrap: wrap;
@@ -209,7 +284,6 @@
     cursor: not-allowed;
 }
 
-/* Selected Tags as Chips */
 .selected-tags-inline {
     display: flex;
     flex-wrap: wrap;
@@ -250,7 +324,6 @@
     cursor: not-allowed;
 }
 
-/* Tag Search Input */
 .tag-search-input {
     flex: 1;
     min-width: 150px;
@@ -262,22 +335,26 @@
 }
 
 .tag-search-input:disabled {
-    background: transparent !important;
     color: #999;
     cursor: not-allowed;
 }
 
-/* Tag Suggestions Dropdown */
 .tag-suggestions {
-    position: fixed;
+    position: absolute;
+    /* ⬅️ Prima era fixed */
+    top: calc(100% + 2px);
+    /* ⬅️ Lo spinge esattamente sotto al contenitore */
+    left: 0;
+    width: 100%;
+    /* ⬅️ Occupa la stessa larghezza del contenitore */
     background: white;
     border: 1px solid #e5e7eb;
     max-height: 200px;
     overflow-y: auto;
     z-index: 1001;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 0 0 6px 6px;
-    margin-top: -6px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    /* Ombra più marcata */
+    border-radius: 6px;
 }
 
 .tag-suggestion-item {
@@ -292,17 +369,16 @@
     background-color: #f0f0f0;
 }
 
-/* Modal Footer */
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 1.5rem;
-    border-top: 2px solid #f0f0f0;
-    background-color: #f8f9fa;
+.tag-suggestion-item:focus {
+    background-color: #e0e7ff;
+    outline: none;
+    border-left: 3px solid #667eea;
+    padding-left: 9px;
 }
 
-/* Buttons */
+/* =========================================
+   7. BUTTONS
+   ========================================= */
 .btn-cancel,
 .btn-save {
     padding: 0.75rem 1.5rem;
@@ -346,33 +422,63 @@
     transform: none;
 }
 
-/* Responsive */
+
+/* =========================================
+   8. RESPONSIVE MOBILE (Sotto i 768px)
+   ========================================= */
 @media (max-width: 768px) {
+
+    /* Riduciamo larghezza e imbottiture generali */
     .modal-container {
         width: 95%;
+        max-width: 400px;
+        /* Evita modali giganti su tablet */
         max-height: 95vh;
     }
 
-    .modal-header {
-        padding: 1rem;
-    }
-
-    .modal-body {
-        padding: 1rem;
-    }
-
+    .modal-header,
+    .modal-body,
     .modal-footer {
         padding: 1rem;
+    }
+
+    .modal-header h2 {
+        font-size: 1.3rem;
+    }
+
+    /* Impila i bottoni Annulla/Salva */
+    .modal-footer {
         flex-direction: column-reverse;
+        /* Il bottone principale starà sopra */
+        gap: 10px;
     }
 
     .btn-cancel,
     .btn-save {
         width: 100%;
+        padding: 12px;
+    }
+
+    /* ⬇️ IL FIX DECISIVO PER LA DATA E L'IMPORTO ⬇️ */
+    /* Da 2 colonne (1fr 1fr) passa a 1 sola colonna! */
+    .form-row-split {
+        grid-template-columns: 1fr;
+        gap: 1rem;
     }
 
     .form-group {
         margin-bottom: 1rem;
+        width: 100%;
+    }
+
+    /* Assicura che gli input stiano al loro posto, ESCLUDENDO la ricerca tag */
+    input[type="date"],
+    input[type="number"],
+    input[type="text"]:not(.tag-search-input),
+    /* ⬅️ LA MAGIA È QUI */
+    select {
+        width: 100% !important;
+        box-sizing: border-box;
     }
 
     .tag-search-container {
@@ -380,83 +486,22 @@
     }
 }
 
-/* Scrollbar Styling */
-.modal-body::-webkit-scrollbar {
-    width: 8px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-.tag-suggestions::-webkit-scrollbar {
-    width: 6px;
-}
-
-.tag-suggestions::-webkit-scrollbar-thumb {
-    background: #ddd;
-    border-radius: 3px;
-}
-
-/* Layout a griglia per mettere Importo e Data sulla stessa riga */
-.form-row-split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-/* Stile per il blocco Trasferimento (opzionale) */
-.transfer-group {
-    background-color: #f8fafc;
-    /* Grigio chiarissimo */
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px dashed #cbd5e1;
-    margin-bottom: 1.5rem;
-}
-
-.badge-optional {
-    font-size: 0.75rem;
-    color: #64748b;
-    font-weight: normal;
-    background: #e2e8f0;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 8px;
-}
-
-/* Messaggi di errore sotto i campi */
-.error-text {
-    color: #c33;
-    font-size: 0.8rem;
-    margin-top: 4px;
-    display: block;
-}
-
-/* Responsive per la griglia */
-@media (max-width: 600px) {
-    .form-row-split {
-        grid-template-columns: 1fr;
-        /* Torna a colonna singola su mobile */
+/* =========================================
+   EXTRA SMALL MOBILE (Sotto i 480px)
+   ========================================= */
+@media (max-width: 480px) {
+    .modal-content {
+        width: 96% !important;
+        /* Prende quasi tutto lo schermo */
+        padding: 1rem 0.8rem !important;
+        /* Meno spazio bianco interno */
+        margin: 10px auto !important;
+        /* Più vicina ai bordi del telefono */
     }
-}
 
-.tag-suggestion-item:focus {
-    background-color: #e0e7ff;
-    /* Colore simile all'hover */
-    outline: none;
-    /* Rimuovi il bordo blu standard del browser */
-    border-left: 3px solid #667eea;
-    /* Indicatore visivo carino */
-    padding-left: 9px;
-    /* Compensa il bordo per non spostare il testo */
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 0.8rem !important;
+    }
 }

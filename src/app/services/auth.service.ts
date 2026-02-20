@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
 export interface User {
@@ -9,7 +9,7 @@ export interface User {
   email: string;
 }
 
-interface AuthResponse {
+export interface AuthResponse {
   success: boolean;
   token?: string;
   user?: User;
@@ -22,93 +22,111 @@ interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://mybudget-angular.test/api/v1';
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  private http = inject(HttpClient);
+  private apiUrl = 'http://mybudget-angular.test/api/v1'; // O usa API_CONFIG se preferisci
+
+  // ============================================================
+  // STATE (SIGNALS)
+  // ============================================================
   
-  public currentUser$ = this.currentUserSubject.asObservable();
+  // Signal privato scrivibile
+  private _currentUser = signal<User | null>(null);
 
-  constructor(private http: HttpClient) { }
+  // Signal pubblico in sola lettura
+  currentUser = this._currentUser.asReadonly();
 
-  private hasToken(): boolean {
-    return !!localStorage.getItem('auth_token');
+  // Computed: siamo loggati se abbiamo un utente O un token nel local storage
+  // (Qui facciamo un controllo ibrido per evitare flash al refresh)
+  isAuthenticated = computed(() => !!this._currentUser() || !!this.getToken());
+
+  constructor() {
+    // Al caricamento, se c'è un token, proviamo a recuperare l'utente
+    if (this.hasToken()) {
+      // Opzionale: potresti chiamare getMe() qui nel costruttore o nell'APP_INITIALIZER
+    }
   }
 
-  /**
-   * Register - POST /api/v1/auth/register
-   * Payload: { name, email, password, password_confirmation }
-   * Response: { success, token, user, message }
-   */
-  register(data: {
-    name: string;
-    email: string;
-    password: string;
-    password_confirmation: string;
-  }): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, data);
-  }
+  // ============================================================
+  // API METHODS
+  // ============================================================
 
   /**
-   * Login - POST /api/v1/auth/login
-   * Payload: { email, password }
-   * Response: { success, token, user, message }
+   * Login
    */
   login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, {
-      email,
-      password
-    }).pipe(
-      tap(response => {
-        if (response.token) {
-          localStorage.setItem('auth_token', response.token);
-          this.isAuthenticatedSubject.next(true);
-        }
-        if (response.user) {
-          this.currentUserSubject.next(response.user);
-        }
-      })
-    );
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, { email, password })
+      .pipe(
+        tap(response => {
+          if (response.token) {
+            this.setToken(response.token);
+          }
+          if (response.user) {
+            this._currentUser.set(response.user);
+          }
+        })
+      );
   }
 
   /**
-   * Logout - POST /api/v1/auth/logout
-   * Header: Authorization: Bearer TOKEN
-   * Response: { success, message }
+   * Register
+   */
+  register(data: { name: string; email: string; password: string; password_confirmation: string }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, data)
+      .pipe(
+        tap(response => {
+          if (response.token) {
+            this.setToken(response.token);
+          }
+          if (response.user) {
+            this._currentUser.set(response.user);
+          }
+        })
+      );
+  }
+
+  /**
+   * Logout
    */
   logout(): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/logout`, {}).pipe(
       tap(() => {
-        localStorage.removeItem('auth_token');
-        this.isAuthenticatedSubject.next(false);
-        this.currentUserSubject.next(null);
+        this.clearSession();
+        window.location.href = '/login';
       })
     );
   }
 
   /**
-   * Get Me - GET /api/v1/auth/me
-   * Header: Authorization: Bearer TOKEN
-   * Response: { success, user }
+   * Recupera profilo utente (es. al refresh della pagina)
    */
   getMe(): Observable<AuthResponse> {
     return this.http.get<AuthResponse>(`${this.apiUrl}/auth/me`).pipe(
       tap(response => {
         if (response.user) {
-          this.currentUserSubject.next(response.user);
+          this._currentUser.set(response.user);
         }
       })
     );
   }
 
-  isAuthenticated(): Observable<boolean> {
-    return this.isAuthenticatedSubject.asObservable();
-  }
+  // ============================================================
+  // TOKEN MANAGEMENT
+  // ============================================================
 
-  isAuthenticatedSync(): boolean {
-    return this.hasToken();
+  private hasToken(): boolean {
+    return !!localStorage.getItem('auth_token');
   }
 
   getToken(): string | null {
     return localStorage.getItem('auth_token');
+  }
+
+  private setToken(token: string) {
+    localStorage.setItem('auth_token', token);
+  }
+
+  private clearSession() {
+    localStorage.removeItem('auth_token');
+    this._currentUser.set(null);
   }
 }

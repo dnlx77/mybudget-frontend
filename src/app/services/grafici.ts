@@ -17,7 +17,7 @@ export interface SpesePerTagData {
  * Interface per i dati guadagni vs spese (mensile)
  */
 export interface GuadagniVsSpeseData {
-  mese: string;           // Formato: "2025-01"
+  data: string;           // Formato: "2025-01"
   guadagni: number;       // Entrate (importo > 0)
   spese: number;          // Uscite (|importo < 0|)
   saldo_netto: number;    // guadagni - spese
@@ -32,7 +32,7 @@ export interface AndamentoSaldoData {
 }
 
 /**
- * Interface per i filtri applicati
+ * Interface per i filtri applicati (Risposta Backend)
  */
 export interface FiltriFiltriGrafici {
   data_inizio: string;
@@ -101,13 +101,14 @@ export interface ApiResponseAndamentoSaldo {
 }
 
 /**
- * Interface per i parametri di filtro
+ * Interface per i parametri di filtro (Input Frontend)
  */
 export interface FiltriGraficiParams {
   data_inizio?: string;   // Formato: YYYY-MM-DD
   data_fine?: string;     // Formato: YYYY-MM-DD
   conto_id?: number | null;
   tag_id?: number | null;
+  tag_ids?: number[];     // 🆕 CAMPO AGGIUNTO PER RISOLVERE L'ERRORE
 }
 
 @Injectable({
@@ -120,30 +121,9 @@ export class GraficiService {
   constructor(private http: HttpClient) {}
 
   /**
-   * Recupera spese aggregate per tag con filtri personalizzabili
-   * 
-   * @param filtri - Oggetto con parametri opzionali
-   * @returns Observable con dati e metadati
-   * 
-   * Esempi uso:
-   * 
-   * // Default: ultimi 30 giorni
-   * this.graficiService.getSpesePerTag().subscribe(...)
-   * 
-   * // Anno specifico
-   * this.graficiService.getSpesePerTag({
-   *   data_inizio: '2024-01-01',
-   *   data_fine: '2024-12-31'
-   * }).subscribe(...)
-   * 
-   * // Filtra per conto
-   * this.graficiService.getSpesePerTag({
-   *   data_inizio: '2024-11-01',
-   *   conto_id: 3
-   * }).subscribe(...)
+   * Helper privato per costruire i parametri comuni
    */
-  getSpesePerTag(filtri?: FiltriGraficiParams): Observable<ApiResponseGrafici<SpesePerTagData[]>> {
-    // Costruisci i query parameters
+  private buildParams(filtri?: FiltriGraficiParams): HttpParams {
     let params = new HttpParams();
     
     if (filtri?.data_inizio) {
@@ -154,7 +134,6 @@ export class GraficiService {
       params = params.set('data_fine', filtri.data_fine);
     }
     
-    // ⬇️ IMPORTANTE: Solo se conto_id è definito e diverso da null/undefined
     if (filtri?.conto_id !== null && filtri?.conto_id !== undefined) {
       params = params.set('conto_id', filtri.conto_id.toString());
     }
@@ -163,59 +142,30 @@ export class GraficiService {
       params = params.set('tag_id', filtri.tag_id.toString());
     }
 
+    // 🆕 GESTIONE ARRAY TAGS -> STRINGA
+    if (filtri?.tag_ids && filtri.tag_ids.length > 0) {
+      params = params.set('tag_ids', filtri.tag_ids.join(','));
+    }
+
+    return params;
+  }
+
+  /**
+   * Recupera spese aggregate per tag con filtri personalizzabili
+   */
+  getSpesePerTag(filtri?: FiltriGraficiParams): Observable<ApiResponseGrafici<SpesePerTagData[]>> {
+    const params = this.buildParams(filtri);
     return this.http.get<ApiResponseGrafici<SpesePerTagData[]>>(
       `${this.apiUrl}/spese-per-tag`,
-      { params }  // ⬅️ Passa i parametri alla richiesta
+      { params }
     );
   }
 
   /**
    * Recupera confronto guadagni vs spese per mese
-   * 
-   * Mostra mensile:
-   * - Guadagni (entrate, importo > 0)
-   * - Spese (uscite, |importo < 0|)
-   * - Saldo netto (guadagni - spese)
-   * 
-   * NOTA: I trasferimenti sono SEMPRE esclusi
-   * 
-   * @param filtri - Oggetto con parametri opzionali
-   * @returns Observable con dati mensili e statistiche
-   * 
-   * Esempi uso:
-   * 
-   * // Ultimi 12 mesi
-   * this.graficiService.getGuadagniVsSpese().subscribe(...)
-   * 
-   * // Anno specifico
-   * this.graficiService.getGuadagniVsSpese({
-   *   data_inizio: '2024-01-01',
-   *   data_fine: '2024-12-31'
-   * }).subscribe(...)
-   * 
-   * // Per conto specifico
-   * this.graficiService.getGuadagniVsSpese({
-   *   data_inizio: '2024-01-01',
-   *   data_fine: '2024-12-31',
-   *   conto_id: 3
-   * }).subscribe(...)
    */
   getGuadagniVsSpese(filtri?: FiltriGraficiParams): Observable<ApiResponseGuadagniSpese> {
-    let params = new HttpParams();
-    
-    if (filtri?.data_inizio) {
-      params = params.set('data_inizio', filtri.data_inizio);
-    }
-    
-    if (filtri?.data_fine) {
-      params = params.set('data_fine', filtri.data_fine);
-    }
-    
-    // ⬇️ IMPORTANTE: Solo se conto_id è definito e diverso da null/undefined
-    if (filtri?.conto_id !== null && filtri?.conto_id !== undefined) {
-      params = params.set('conto_id', filtri.conto_id.toString());
-    }
-
+    const params = this.buildParams(filtri);
     return this.http.get<ApiResponseGuadagniSpese>(
       `${this.apiUrl}/guadagni-vs-spese`,
       { params }
@@ -224,48 +174,10 @@ export class GraficiService {
 
   /**
    * Recupera l'andamento del saldo nel tempo (giorno per giorno)
-   * 
-   * Mostra l'evoluzione cumulativa del saldo:
-   * - Parte dal saldo_iniziale del conto
-   * - Aggiorna ogni giorno con le operazioni
-   * - Genera un punto per ogni giorno nel periodo
-   * 
-   * IMPORTANTE: conto_id è OBBLIGATORIO per calcolare il saldo iniziale correttamente
-   * 
-   * @param filtri - Oggetto con parametri (conto_id è OBBLIGATORIO!)
-   * @returns Observable con dati giornalieri e statistiche
-   * 
-   * Esempi uso:
-   * 
-   * // Per un conto, ultimi 3 mesi
-   * this.graficiService.getAndamentoSaldo({
-   *   conto_id: 3
-   * }).subscribe(...)
-   * 
-   * // Periodo personalizzato
-   * this.graficiService.getAndamentoSaldo({
-   *   data_inizio: '2024-10-01',
-   *   data_fine: '2024-12-31',
-   *   conto_id: 3
-   * }).subscribe(...)
    */
   getAndamentoSaldo(filtri: FiltriGraficiParams): Observable<ApiResponseAndamentoSaldo> {
     console.log('🔍 getAndamentoSaldo() chiamato con filtri:', filtri);
-    let params = new HttpParams();
-    
-    if (filtri?.data_inizio) {
-      params = params.set('data_inizio', filtri.data_inizio);
-    }
-    
-    if (filtri?.data_fine) {
-      params = params.set('data_fine', filtri.data_fine);
-    }
-    
-    // ⬇️ IMPORTANTE: conto_id è OBBLIGATORIO per questo endpoint!
-    if (filtri?.conto_id !== null && filtri?.conto_id !== undefined) {
-      params = params.set('conto_id', filtri.conto_id.toString());
-    }
-
+    const params = this.buildParams(filtri);
     return this.http.get<ApiResponseAndamentoSaldo>(
       `${this.apiUrl}/andamento-saldo`,
       { params }

@@ -1,102 +1,54 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule], // ⬅️ Importante: ReactiveFormsModule
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent {
   
-  email: string = '';
-  password: string = '';
-  
-  loading: boolean = false;
-  error: string | null = null;
-  errors: { [key: string]: string[] } = {};
+  // DEPENDENCIES
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private fb = inject(FormBuilder);
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) { }
+  // STATE SIGNALS
+  loading = signal(false);
+  error = signal<string | null>(null);
 
-  ngOnInit(): void {
-    console.log('🟢 LoginComponent inizializzato');
-  }
-
-  validateForm(): boolean {
-    this.error = null;
-    this.errors = {};
-
-    if (!this.email.trim()) {
-      this.error = 'L\'email è obbligatoria';
-      return false;
-    }
-
-    if (!this.email.includes('@')) {
-      this.error = 'L\'email non è valida';
-      return false;
-    }
-
-    if (!this.password) {
-      this.error = 'La password è obbligatoria';
-      return false;
-    }
-
-    return true;
-  }
+  // REACTIVE FORM
+  form = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]]
+  });
 
   onLogin(): void {
-    console.log('🔐 Tentativo di login');
-
-    if (!this.validateForm()) {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched(); // Mostra gli errori rossi se l'utente clicca senza scrivere
       return;
     }
 
-    this.loading = true;
-    this.error = null;
-    this.errors = {};
+    this.loading.set(true);
+    this.error.set(null);
 
-    console.log('📤 Invio login con email:', this.email);
+    const { email, password } = this.form.getRawValue();
 
-    this.authService.login(this.email, this.password).subscribe({
+    this.authService.login(email!, password!).subscribe({
       next: (response) => {
         console.log('✅ Login avvenuto:', response);
-        this.loading = false;
-        
-        // Reindirizza al dashboard
+        this.loading.set(false);
         this.router.navigate(['/dashboard']);
       },
-      error: (error) => {
-        console.error('❌ Errore login:', error);
-        this.loading = false;
-
-        // Gestisci errori di validazione (422)
-        if (error.status === 422 && error.error?.errors) {
-          this.errors = error.error.errors;
-          const firstErrorKey = Object.keys(this.errors)[0];
-          const firstErrorMessage = this.errors[firstErrorKey][0];
-          this.error = firstErrorMessage;
-        }
-        // Gestisci errori di autenticazione (401)
-        else if (error.status === 401) {
-          this.error = 'Email o password non corretti';
-        }
-        // Gestisci errori generici
-        else if (error.error?.error) {
-          this.error = error.error.error;
-        } else if (error.error?.message) {
-          this.error = error.error.message;
-        } else if (error.status === 500) {
-          this.error = 'Errore del server. Contatta l\'amministratore';
-        } else {
-          this.error = 'Errore nel login';
-        }
+      error: (err) => {
+        console.error('❌ Errore login:', err);
+        this.loading.set(false);
+        this.handleError(err);
       }
     });
   }
@@ -105,10 +57,16 @@ export class LoginComponent implements OnInit {
     this.router.navigate(['/register']);
   }
 
-  getFieldError(fieldName: string): string | null {
-    if (this.errors[fieldName]) {
-      return this.errors[fieldName][0];
+  // Gestione errori API avanzata
+  private handleError(error: any) {
+    if (error.status === 401) {
+      this.error.set('Email o password non corretti.');
+    } else if (error.status === 422 && error.error?.errors) {
+      // Prende il primo errore di validazione dal backend
+      const firstError = Object.values(error.error.errors)[0] as string[];
+      this.error.set(firstError[0]);
+    } else {
+      this.error.set(error.error?.message || 'Si è verificato un errore. Riprova.');
     }
-    return null;
   }
 }

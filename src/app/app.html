@@ -1,6 +1,6 @@
 <app-navbar></app-navbar>
 
-@if (isAuthenticated) {
+@if (isAuthenticated()) {
 <!-- Quando autenticato: mostra le route protette -->
 <router-outlet></router-outlet>
 } @else {

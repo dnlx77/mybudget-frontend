@@ -1,1 +1,17 @@
-/* You can add global styles to this file, and also import other style files */
+/* 1. Reset vitale per le dimensioni (impedisce a padding/bordi di allargare i div) */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* 2. Blocca lo scroll orizzontale sull'intera pagina */
+html,
+body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    /* Taglia via tutto ciò che sfora a destra */
+    margin: 0;
+    padding: 0;
+}

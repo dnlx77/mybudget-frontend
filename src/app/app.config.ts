@@ -1,7 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptors, HTTP_INTERCEPTORS, withInterceptorsFromDi } from '@angular/common/http';
-import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { provideHttpClient, withInterceptors } from '@angular/common/http'; // ⬅️ Rimuovi i vecchi import
+import { authInterceptor } from './interceptors/auth.interceptor'; // Importa la funzione, non la classe
 import { provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
 import { BarChart, LineChart, PieChart } from 'echarts/charts';
@@ -10,15 +10,9 @@ import { CanvasRenderer } from 'echarts/renderers';
 
 import { routes } from './app.routes';
 
-// Registra i componenti ECharts che userai
 echarts.use([
-  BarChart,
-  LineChart,
-  PieChart,
-  GridComponent,
-  TooltipComponent,
-  TitleComponent,
-  LegendComponent,
+  BarChart, LineChart, PieChart,
+  GridComponent, TooltipComponent, TitleComponent, LegendComponent,
   CanvasRenderer
 ]);
 
@@ -27,14 +21,12 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
+    
+    // ✅ HTTP CLIENT CONFIGURATO IN MODO MODERNO
     provideHttpClient(
-      withInterceptorsFromDi()
+      withInterceptors([authInterceptor]) // Qui carichiamo la funzione
     ),
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: AuthInterceptor,
-      multi: true
-    },
-    provideEchartsCore({echarts})
+    
+    provideEchartsCore({ echarts })
   ]
 };

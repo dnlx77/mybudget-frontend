@@ -1,35 +1,22 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Navbar } from './components/navbar/navbar';
 import { AuthService } from './services/auth.service';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [CommonModule, RouterOutlet, Navbar],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit, OnDestroy {
+export class App {
   
-  isAuthenticated: boolean = false;
-  private destroy$ = new Subject<void>();
+  private authService = inject(AuthService);
 
-  constructor(private authService: AuthService) { }
+  // Colleghiamo direttamente il Signal del servizio
+  // Non serve più ngOnInit o subscribe!
+  isAuthenticated = this.authService.isAuthenticated;
 
-  ngOnInit(): void {
-    // Sottoscrizione all'Observable
-    this.authService.isAuthenticated()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isAuth => {
-        this.isAuthenticated = isAuth;
-      });
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
 }

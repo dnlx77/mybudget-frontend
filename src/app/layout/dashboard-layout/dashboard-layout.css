@@ -38,13 +38,28 @@
 
 /* Responsive - Mobile */
 @media (max-width: 768px) {
-  .dashboard-container {
-    padding: 1rem;
-    gap: 1rem;
+.dashboard-container {
+    width: 100%;
+    max-width: 100vw;
+    padding: 10px !important;
+    /* Margini più stretti per il cellulare */
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 
   .left-panel,
   .right-panel {
     gap: 1rem;
+  }
+}
+
+/* =========================================
+   EXTRA SMALL MOBILE (Sotto i 480px)
+   ========================================= */
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 6px !important;
+    /* Recuperiamo spazio prezioso ai lati */
+    gap: 10px !important;
   }
 }
