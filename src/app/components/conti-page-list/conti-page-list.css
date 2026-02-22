@@ -173,13 +173,19 @@
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE (Mobile & Tablet)
    ============================================================ */
 @media (max-width: 768px) {
     .conti-page-list {
-        padding: 1rem;
-        border-radius: 0;
-        box-shadow: none;
+        padding: 1.2rem;
+        margin: 15px;
+        /* Stacca la scheda dai bordi dello schermo */
+        border-radius: 12px;
+        /* Mantiene gli angoli arrotondati */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        /* Mantiene l'ombra */
+        max-width: calc(100% - 30px);
+        /* Assicura che rientri nello schermo calcolando i margini */
     }
 
     .header {
@@ -191,10 +197,34 @@
 
     .header button {
         width: 100%;
+        padding: 12px;
     }
 
     .conti-table th,
     .conti-table td {
         padding: 0.75rem 0.5rem;
+    }
+}
+
+/* ============================================================
+   EXTRA SMALL MOBILE (Sotto i 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .conti-page-list {
+        margin: 10px;
+        /* Margine più piccolo per schermi stretti */
+        padding: 1rem;
+        max-width: calc(100% - 20px);
+    }
+
+    /* Se il nome del conto è lungo, permette di andare a capo */
+    .conti-table td {
+        word-break: break-word;
+        font-size: 0.9rem;
+    }
+
+    .azioni {
+        gap: 0.3rem;
+        /* Avvicina i tasti modifica/elimina */
     }
 }

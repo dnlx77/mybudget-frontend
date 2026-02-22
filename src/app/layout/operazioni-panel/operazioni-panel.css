@@ -345,14 +345,18 @@
 
 .descrizione {
   color: #666;
-  max-width: 200px;
+  max-width: 250px;
+  display: flex;
+  /* Affianca il testo e l'eventuale icona */
+  align-items: center;
+  gap: 6px;
 }
 
 .desc-text {
-  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: help; /* Mostra il puntatore per indicare il tooltip */
 }
 
 .importo {
@@ -615,7 +619,13 @@
     color: #333;
     margin-top: 5px;
     line-height: 1.4;
+    display: block; /* Disabilita il flex su mobile per lasciarlo libero */
   }
+
+    /* Su mobile vogliamo che il testo vada a capo, niente tre puntini! */
+    .desc-text {
+      white-space: normal;
+    }
 
   /* TAGS: Riga 3 */
   .operazioni-table td:nth-child(3) {

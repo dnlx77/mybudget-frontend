@@ -116,7 +116,7 @@
             </div>
           </td>
           <td class="descrizione">
-            <span class="desc-text">{{ op.descrizione }}</span>
+            <span class="desc-text" [title]="op.descrizione">{{ op.descrizione }}</span>
             @if (op.trasferimento === 'T') {
             <span class="badge-transfer" title="Trasferimento">🔄</span>
             }

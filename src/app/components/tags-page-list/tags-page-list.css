@@ -172,29 +172,58 @@
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE (Mobile & Tablet)
    ============================================================ */
 @media (max-width: 768px) {
     .tags-page-list {
-        padding: 1rem;
+        padding: 1.2rem;
+        margin: 15px;
+        /* Stacca la scheda dai bordi dello schermo */
+        border-radius: 12px;
+        /* Mantiene gli angoli arrotondati */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        /* Mantiene l'ombra */
+        max-width: calc(100% - 30px);
+        /* Assicura che rientri nello schermo calcolando i margini */
     }
 
     .header {
         flex-direction: column;
         gap: 1rem;
-        align-items: flex-start;
+        align-items: stretch;
+        text-align: center;
     }
 
     .header button {
         width: 100%;
-    }
-
-    .tags-table {
-        font-size: 0.7rem;
+        padding: 12px;
     }
 
     .tags-table th,
     .tags-table td {
-        padding: 0.5rem;
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+/* ============================================================
+   EXTRA SMALL MOBILE (Sotto i 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .tags-page-list {
+        margin: 10px;
+        /* Margine più piccolo per schermi stretti */
+        padding: 1rem;
+        max-width: calc(100% - 20px);
+    }
+
+    /* Se il nome del conto è lungo, permette di andare a capo */
+    .tags-table td {
+        word-break: break-word;
+        font-size: 0.9rem;
+    }
+
+    .azioni {
+        gap: 0.3rem;
+        /* Avvicina i tasti modifica/elimina */
     }
 }
