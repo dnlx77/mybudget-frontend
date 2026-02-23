@@ -6,28 +6,34 @@
         </div>
 
         <div class="navbar-menu">
-            <a routerLink="/conti" routerLinkActive="active" class="nav-link">Conti</a>
             <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a>
+            <a routerLink="/conti" routerLinkActive="active" class="nav-link">Conti</a>
             <a routerLink="/tags" routerLinkActive="active" class="nav-link">Tag</a>
             <a routerLink="/grafici" routerLinkActive="active" class="nav-link">Grafici</a>
         </div>
 
         <div class="navbar-right">
-
             @if (currentUser()) {
             <div class="user-info">
                 <span class="username">{{ currentUser()?.name }}</span>
                 <span class="email">({{ currentUser()?.email }})</span>
             </div>
-            }
 
-            <button class="logout-btn" (click)="onLogout()" [disabled]="loading">
-                @if (loading) {
-                Disconnessione...
-                } @else {
-                Esci
-                }
-            </button>
+            <div class="user-actions">
+                <a routerLink="/profilo" routerLinkActive="active" class="nav-link profile-link">
+                    👤 Profilo
+                </a>
+
+                <button class="logout-btn" (click)="onLogout()" [disabled]="loading">
+                    @if (loading) {
+                    Disconnessione...
+                    } @else {
+                    Esci
+                    }
+                </button>
+            </div>
+            }
         </div>
+
     </div>
 </nav>

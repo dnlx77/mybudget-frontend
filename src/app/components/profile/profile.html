@@ -1,0 +1,41 @@
+<div class="main-card-container">
+    <div class="header">
+        <h1>Il mio Profilo</h1>
+    </div>
+
+    <div class="profile-content">
+        <h3>Cambia Password</h3>
+
+        @if (successMessage()) {
+        <div class="alert alert-success">{{ successMessage() }}</div>
+        }
+        @if (errorMessage()) {
+        <div class="alert alert-danger">{{ errorMessage() }}</div>
+        }
+
+        <form [formGroup]="passwordForm" (ngSubmit)="onSubmit()" class="password-form">
+
+            <div class="form-group">
+                <label>Password Attuale</label>
+                <input type="password" formControlName="current_password" class="form-control"
+                    placeholder="Inserisci la vecchia password">
+            </div>
+
+            <div class="form-group">
+                <label>Nuova Password</label>
+                <input type="password" formControlName="password" class="form-control" placeholder="Minimo 8 caratteri">
+            </div>
+
+            <div class="form-group">
+                <label>Conferma Nuova Password</label>
+                <input type="password" formControlName="password_confirmation" class="form-control"
+                    placeholder="Ripeti la nuova password">
+            </div>
+
+            <button type="submit" class="btn-primary" [disabled]="passwordForm.invalid || loading()">
+                {{ loading() ? 'Salvataggio...' : 'Aggiorna Password' }}
+            </button>
+
+        </form>
+    </div>
+</div>

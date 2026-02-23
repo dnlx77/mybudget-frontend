@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
+import { ProfileComponent } from './components/profile/profile';
 import { DashboardLayout } from './layout/dashboard-layout/dashboard-layout';
 import { authGuard } from './guards/auth-guard';
 import { ContiPage } from './components/conti-page/conti-page';
@@ -25,6 +26,11 @@ export const routes: Routes = [
     path: 'dashboard',
     component: DashboardLayout,
     canActivate: [authGuard]
+  },
+  { 
+    path: 'profilo', 
+    component: ProfileComponent, 
+    canActivate: [authGuard] 
   },
   {
     path: 'conti',

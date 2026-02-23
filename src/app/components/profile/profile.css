@@ -1,0 +1,164 @@
+/* ============================================================
+   CONTAINER PRINCIPALE
+   ============================================================ */
+.main-card-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 600px;
+    /* Più stretto rispetto alle tabelle per un look più pulito */
+    margin: 2rem auto;
+    /* Centrato orizzontalmente con un po' di spazio sopra */
+}
+
+/* ============================================================
+   HEADER E TITOLI
+   ============================================================ */
+.header {
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 1rem;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.profile-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    color: #555;
+    font-weight: 600;
+}
+
+/* ============================================================
+   FORM E INPUT
+   ============================================================ */
+.password-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    /* Spazio verticale tra i campi */
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    /* Spazio tra la label e l'input */
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #444;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #333;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    /* Impedisce agli input di sbordare su mobile */
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    /* Alone viola stile Tailwind/Bootstrap */
+}
+
+/* ============================================================
+   BOTTONI
+   ============================================================ */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Il tuo stile distintivo */
+    color: white;
+    border: none;
+    padding: 0.85rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    margin-top: 0.5rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+    background: #a0aec0;
+    /* Grigio neutro quando non si può cliccare */
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================================
+   ALERTS (Messaggi di successo/errore)
+   ============================================================ */
+.alert {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.alert-success {
+    background-color: #e6ffed;
+    color: #2ea043;
+    border: 1px solid #bef5cb;
+    border-left: 4px solid #2ea043;
+    /* Un bel dettaglio grafico sul lato */
+}
+
+.alert-danger {
+    background-color: #fee;
+    color: #c33;
+    border: 1px solid #fcc;
+    border-left: 4px solid #c33;
+}
+
+/* ============================================================
+   RESPONSIVE (Mobile)
+   ============================================================ */
+@media (max-width: 768px) {
+    .main-card-container {
+        margin: 15px;
+        /* Applica la correzione dei bordi che abbiamo usato nei Conti/Tags */
+        padding: 1.2rem;
+        max-width: calc(100% - 30px);
+    }
+}
+
+@media (max-width: 480px) {
+    .main-card-container {
+        margin: 10px;
+        padding: 1rem;
+        max-width: calc(100% - 20px);
+    }
+
+    .btn-primary {
+        width: 100%;
+        /* Rende il bottone comodo da tappare col pollice */
+        padding: 1rem;
+    }
+}

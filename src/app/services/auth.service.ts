@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { API_CONFIG } from '../config/api.config';
 
 export interface User {
   id: number;
@@ -23,7 +24,7 @@ export interface AuthResponse {
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://mybudget-angular.test/api/v1'; // O usa API_CONFIG se preferisci
+  private apiUrl = API_CONFIG.getEndpoint('auth');
 
   // ============================================================
   // STATE (SIGNALS)
@@ -54,7 +55,7 @@ export class AuthService {
    * Login
    */
   login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, { email, password })
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { email, password })
       .pipe(
         tap(response => {
           if (response.token) {
@@ -71,7 +72,7 @@ export class AuthService {
    * Register
    */
   register(data: { name: string; email: string; password: string; password_confirmation: string }): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, data)
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data)
       .pipe(
         tap(response => {
           if (response.token) {
@@ -88,7 +89,7 @@ export class AuthService {
    * Logout
    */
   logout(): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/logout`, {}).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/logout`, {}).pipe(
       tap(() => {
         this.clearSession();
         window.location.href = '/login';
@@ -100,13 +101,20 @@ export class AuthService {
    * Recupera profilo utente (es. al refresh della pagina)
    */
   getMe(): Observable<AuthResponse> {
-    return this.http.get<AuthResponse>(`${this.apiUrl}/auth/me`).pipe(
+    return this.http.get<AuthResponse>(`${this.apiUrl}/me`).pipe(
       tap(response => {
         if (response.user) {
           this._currentUser.set(response.user);
         }
       })
     );
+  }
+
+  /**
+  * Metodo per cambiare la password
+  * */
+  changePassword(data: { current_password: string, password: string, password_confirmation: string }): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(`${this.apiUrl}/password`, data);
   }
 
   // ============================================================

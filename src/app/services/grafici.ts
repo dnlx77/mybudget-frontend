@@ -116,7 +116,7 @@ export interface FiltriGraficiParams {
 })
 export class GraficiService {
   
-  private apiUrl = `${API_CONFIG.BASE_URL}/${API_CONFIG.API_VERSION}/grafici`;
+  private apiUrl = `${API_CONFIG.BASE_URL}/grafici`;
 
   constructor(private http: HttpClient) {}
 
