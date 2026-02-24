@@ -228,6 +228,122 @@
 }
 
 /* =========================================
+   AGGIUNTE PER IMPORTO CON RADIO BUTTONS VERTICALI
+   ========================================= */
+
+.importo-container-vertical {
+    display: flex;
+    align-items: stretch;
+    /* Fa sì che i figli occupino tutta l'altezza */
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 44px;
+    /* Altezza fissa identica a quella degli altri input (es. Data) */
+    background: white;
+    transition: all 0.3s ease;
+}
+
+/* Effetto focus per l'intero contenitore */
+.importo-container-vertical:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.segno-radios-vertical {
+    display: flex;
+    flex-direction: column;
+    width: 35px;
+    border-right: 1px solid #e5e7eb;
+    gap: 0;
+    /* Assicuriamoci che non ci siano gap di flexbox */
+}
+
+.radio-label-vertical {
+    flex: 1;
+    display: flex;
+    margin: 0 !important;
+    /* IL FIX: Blocca il margine ereditato da .form-group label */
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Nascondiamo il vero radio button */
+.radio-label-vertical input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+    margin: 0;
+}
+
+/* Il box colorato che sostituisce il radio button */
+.segno-box {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    /* Leggermente più grandi per bilanciarli meglio */
+    font-weight: bold;
+    line-height: 0;
+    /* FIX 1: Rimuove l'altezza invisibile extra del font */
+    padding-bottom: 4px;
+    /* FIX 2: Spinge il testo millimetricamente in alto per il centro ottico perfetto */
+    color: white;
+    background-color: #d1d5db;
+    transition: background-color 0.2s;
+    box-sizing: border-box;
+}
+
+/* Quando il bottone MENO è selezionato */
+.radio-minus input[type="radio"]:checked+.segno-box {
+    background-color: #e74c3c;
+    /* Rosso */
+}
+
+/* Quando il bottone PIÙ è selezionato */
+.radio-plus input[type="radio"]:checked+.segno-box {
+    background-color: #27ae60;
+    /* Verde */
+}
+
+/* Wrapper per l'input e il simbolo € */
+.input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+/* Input numerico */
+.importo-input-vertical {
+    flex: 1;
+    height: 100%;
+    padding: 0 0.5rem 0 1rem !important;
+    /* Riscrive il padding standard */
+    border: none !important;
+    /* RIMUOVE il bordo doppio che vedevi nell'immagine */
+    font-size: 1rem !important;
+    /* Dimensione testo normale */
+    font-family: inherit;
+    text-align: left;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    /* Rimuove ombre interne sgradite */
+    margin: 0 !important;
+}
+
+/* Simbolo € */
+.currency-symbol {
+    padding: 0 1rem 0 0.5rem;
+    font-size: 1rem;
+    color: #888;
+}
+
+/* =========================================
    5. TRANSFER & ERRORS
    ========================================= */
 .transfer-group {

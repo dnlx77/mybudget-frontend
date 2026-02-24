@@ -59,7 +59,8 @@ export class OperazioneFormComponent implements OnInit {
   
   form = this.fb.group({
     data_operazione: [this.getTodayDate(), Validators.required],
-    importo: [null as number | null, Validators.required],
+    segno: ['-', Validators.required], // <-- NUOVO: Di default è un'uscita (-)
+    importo: [null as number | null, [Validators.required, Validators.min(0.01)]], // <-- NUOVO: Solo numeri positivi
     descrizione: [''],
     conto_id: [null as number | null, Validators.required],
     conto_destinazione_id: [null as number | null] // Opzionale
@@ -71,7 +72,6 @@ export class OperazioneFormComponent implements OnInit {
   private tagService = inject(TagService);
 
   // COMPUTED: Filtro Tag intelligenti
-  // Mostra i tag che matchano la ricerca E che NON sono già selezionati
   filteredTags = computed(() => {
     const term = this.tagSearchValue()?.toLowerCase() || '';
     if (!term) return [];
@@ -93,8 +93,10 @@ export class OperazioneFormComponent implements OnInit {
         if (this._operazioneEdit()) {
           this.populateForm(this._operazioneEdit()!);
         } else {
+          // RESET FORM CREAZIONE NUOVA OPERAZIONE
           this.form.reset({
             data_operazione: this.getTodayDate(),
+            segno: '-', // <-- Reimposta il segno su uscita di default
             importo: null,
             descrizione: '',
             conto_id: null,
@@ -138,9 +140,14 @@ export class OperazioneFormComponent implements OnInit {
 
   // LOGICA FORM
   populateForm(op: Operazione) {
+    // NUOVO: Calcoliamo il segno e l'importo assoluto
+    const segnoCorretto = op.importo >= 0 ? '+' : '-';
+    const importoAssoluto = Math.abs(op.importo);
+
     this.form.patchValue({
       data_operazione: op.data_operazione,
-      importo: op.importo,
+      segno: segnoCorretto, // <-- Impostiamo il pallino corretto
+      importo: importoAssoluto, // <-- Mostriamo il numero senza il meno
       descrizione: op.descrizione,
       conto_id: op.conto_id,
       conto_destinazione_id: null // In edit non gestiamo cambio destinazione complesso per ora
@@ -164,10 +171,8 @@ export class OperazioneFormComponent implements OnInit {
   // GESTIONE TAGS
   selectTag(tag: TagModel) {
     this.selectedTags.update(tags => [...tags, tag]);
-    this.tagSearchControl.setValue(''); // Pulisce input
+    this.tagSearchControl.setValue('');
 
-    // NUOVO: Rimetti il focus sulla casella di input!
-    // Usiamo setTimeout per assicurarci che avvenga dopo il rendering del ciclo di Angular
     setTimeout(() => {
         this.tagInputRef.nativeElement.focus();
     }, 0);
@@ -179,17 +184,13 @@ export class OperazioneFormComponent implements OnInit {
 
   // Gestione tastiera sull'input
   handleInputKeydown(event: KeyboardEvent) {
-    // Se preme TAB e ci sono suggerimenti visibili
     if (event.key === 'Tab' && this.filteredTags().length > 0) {
-      event.preventDefault(); // Ferma il salto al campo 'Descrizione'
-      
-      // Sposta il focus sul primo elemento della lista
+      event.preventDefault(); 
       const firstItem = this.suggestionItems.first;
       if (firstItem) {
         firstItem.nativeElement.focus();
       }
     }
-    // (Opzionale) Se preme INVIO e c'è solo un suggerimento, selezionalo subito
     else if (event.key === 'Enter' && this.filteredTags().length === 1) {
         event.preventDefault();
         this.selectTag(this.filteredTags()[0]);
@@ -207,7 +208,7 @@ export class OperazioneFormComponent implements OnInit {
   // SUBMIT
   onSubmit() {
     if (this.form.invalid) {
-      this.form.markAllAsTouched(); // Mostra errori in rosso
+      this.form.markAllAsTouched();
       this.error.set("Compila correttamente tutti i campi obbligatori.");
       return;
     }
@@ -220,13 +221,24 @@ export class OperazioneFormComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    // Prepara payload
-    const formData = this.form.getRawValue();
+    // Prepara i valori dal form
+    const formValues = this.form.getRawValue();
+
+    // NUOVO: Calcola l'importo finale in base al segno selezionato
+    let importoFinale = Math.abs(formValues.importo as number);
+    if (formValues.segno === '-') {
+      importoFinale = importoFinale * -1;
+    }
+
     const payload: any = {
-      ...formData,
+      ...formValues,
+      importo: importoFinale, // Invia l'importo calcolato
       tags: this.selectedTags().map(t => t.id),
       id: this.isEditMode() ? this._operazioneEdit()!.id : undefined
     };
+
+    // Rimuoviamo il campo 'segno' perché al backend non serve
+    delete payload.segno;
 
     const req$ = this.isEditMode()
       ? this.operazioneService.updateOperazione(payload.id, payload)

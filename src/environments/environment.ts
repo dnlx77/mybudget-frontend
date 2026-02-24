@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://ciamby.org/api/v1'
+    apiUrl: 'https://mybudget.ciamby.org/api/v1'
 };

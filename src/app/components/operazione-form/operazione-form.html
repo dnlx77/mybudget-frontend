@@ -59,13 +59,34 @@
                 }
 
                 <div class="form-row-split">
-                    <div class="form-group">
-                        <label for="importo">Importo *</label>
-                        <input id="importo" type="number" step="0.01" formControlName="importo"
-                            placeholder="Es: -50.00 o 100" />
-                        @if (form.get('importo')?.invalid && form.get('importo')?.touched) {
-                        <span class="error-text">Inserisci un importo valido.</span>
-                        }
+                    <div class="form-row-split">
+                        <div class="form-group">
+                            <label>Importo *</label>
+                            <div class="importo-container-vertical">
+                                <div class="segno-radios-vertical">
+                                    <label class="radio-label-vertical radio-minus">
+                                        <input type="radio" formControlName="segno" value="-">
+                                        <span class="segno-box">-</span>
+                                    </label>
+                                    <label class="radio-label-vertical radio-plus">
+                                        <input type="radio" formControlName="segno" value="+">
+                                        <span class="segno-box">+</span>
+                                    </label>
+                                </div>
+                    
+                                <div class="input-wrapper">
+                                    <input type="number" step="0.01" min="0" inputmode="decimal" formControlName="importo"
+                                        class="importo-input-vertical" placeholder="0.00" />
+                                    <span class="currency-symbol">€</span>
+                                </div>
+                            </div>
+                            @if (form.get('importo')?.invalid && form.get('importo')?.touched) {
+                            <span class="error-text">Inserisci un importo valido (maggiore di 0).</span>
+                            }
+                        </div>
+                    
+                        <div class="form-group">
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -91,14 +112,15 @@
                             }
                         </div>
 
-                        <input type="text" #tagInputRef class="tag-search-input" [formControl]="tagSearchControl" (keydown)="handleInputKeydown($event)"
-                            placeholder="Cerca tag..." autocomplete="off" />
+                        <input type="text" #tagInputRef class="tag-search-input" [formControl]="tagSearchControl"
+                            (keydown)="handleInputKeydown($event)" placeholder="Cerca tag..." autocomplete="off" />
                     </div>
 
                     @if (filteredTags().length > 0) {
                     <div class="tag-suggestions">
                         @for (tag of filteredTags(); track tag.id) {
-                        <div class="tag-suggestion-item" tabindex="0" #suggestionItem (click)="selectTag(tag)" (keydown)="handleSuggestionKeydown($event, tag)">
+                        <div class="tag-suggestion-item" tabindex="0" #suggestionItem (click)="selectTag(tag)"
+                            (keydown)="handleSuggestionKeydown($event, tag)">
                             {{ tag.nome }}
                         </div>
                         }
@@ -111,9 +133,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="descrizione">Descrizione</label> <textarea id="descrizione" formControlName="descrizione" rows="2"
-                        placeholder="Es: Spesa supermercato..."></textarea>
-                
+                    <label for="descrizione">Descrizione</label> <textarea id="descrizione"
+                        formControlName="descrizione" rows="2" placeholder="Es: Spesa supermercato..."></textarea>
                 </div>
 
             </form>
