@@ -159,6 +159,7 @@ export class OperazioneFormComponent implements OnInit {
   }
 
   resetState() {
+    this.loading.set(false);
     this.error.set(null);
     this.success.set(null);
     this.tagSearchControl.setValue('');
@@ -207,6 +208,10 @@ export class OperazioneFormComponent implements OnInit {
 
   // SUBMIT
   onSubmit() {
+    if (this.loading()) {
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.error.set("Compila correttamente tutti i campi obbligatori.");
@@ -247,7 +252,6 @@ export class OperazioneFormComponent implements OnInit {
     req$.subscribe({
       next: (res) => {
         this.success.set(this.isEditMode() ? "Modificato con successo!" : "Creato con successo!");
-        this.loading.set(false);
         setTimeout(() => {
           this.saved.emit();
           this.onClose();

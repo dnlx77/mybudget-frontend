@@ -44,8 +44,7 @@ export class ContiPageForm {
     // EFFETTO: Quando si apre il modale, popola o resetta il form
     effect(() => {
       if (this._isOpen()) {
-        this.error.set(null);
-        this.success.set(null);
+        this.resetState();
         
         const conto = this._contoEdit();
         if (conto) {
@@ -59,7 +58,17 @@ export class ContiPageForm {
     }, { allowSignalWrites: true });
   }
 
+  resetState() {
+    this.loading.set(false); // Sblocca il pulsante
+    this.error.set(null);    // Pulisce vecchi errori
+    this.success.set(null);  // Pulisce vecchi messaggi di successo
+  }
+
   onSubmit() {
+    if (this.loading()) {
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -87,7 +96,7 @@ export class ContiPageForm {
     req$.subscribe({
       next: (res) => {
         this.success.set(this._contoEdit() ? 'Conto modificato!' : 'Conto creato!');
-        this.loading.set(false);
+        //this.loading.set(false);
         setTimeout(() => {
           this.saved.emit();
           this.onClose();

@@ -43,8 +43,7 @@ export class TagsPageForm {
     // EFFETTO: Reset o Popolamento automatico all'apertura
     effect(() => {
       if (this._isOpen()) {
-        this.error.set(null);
-        this.success.set(null);
+        this.resetState();
         
         const tag = this._tagEdit();
         if (tag) {
@@ -56,7 +55,17 @@ export class TagsPageForm {
     }, { allowSignalWrites: true });
   }
 
+  resetState() {
+    this.loading.set(false); // Sblocca il pulsante
+    this.error.set(null);    // Pulisce vecchi errori
+    this.success.set(null);  // Pulisce vecchi messaggi di successo
+  }
+
   onSubmit() {
+    if (this.loading()) {
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -82,7 +91,6 @@ export class TagsPageForm {
     req$.subscribe({
       next: (res) => {
         this.success.set(this._tagEdit() ? 'Tag modificato!' : 'Tag creato!');
-        this.loading.set(false);
         setTimeout(() => {
           this.saved.emit();
           this.onClose();

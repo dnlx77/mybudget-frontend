@@ -142,10 +142,10 @@
         </div>
 
         <div class="modal-footer">
-            <button class="btn-cancel" (click)="onClose()" [disabled]="loading()">
+            <button class="btn-cancel" type="button" (click)="onClose()" [disabled]="loading()">
                 Annulla
             </button>
-            <button class="btn-save" (click)="onSubmit()" [disabled]="loading()">
+            <button class="btn-save" type="button" (click)="onSubmit()" [disabled]="loading() || success()">
                 @if (loading()) {
                 Salvataggio...
                 } @else {
