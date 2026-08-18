@@ -58,6 +58,7 @@ export interface FiltriOperazioni {
   data?: string;
   tag?: number | string;
   conto_id?: number | string;
+  descrizione?: string;
   page?: number;
   per_page?: number;
 }

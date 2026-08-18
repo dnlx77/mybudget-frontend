@@ -41,6 +41,7 @@ export class OperazioniPanelComponent implements OnInit {
   filterConto = signal<string>('');
   filterTag = signal<string>('');
   filterData = signal<string>('');
+  filterDescrizione = signal<string>('');
   
   // UI State
   isLoading = signal(false);
@@ -91,6 +92,7 @@ export class OperazioniPanelComponent implements OnInit {
       toObservable(this.filterConto),
       toObservable(this.filterTag),
       toObservable(this.filterData),
+      toObservable(this.filterDescrizione),
       this.loadTrigger$.pipe(debounceTime(0)) // Trick per includere il trigger nello stream
     ]).pipe(
       debounceTime(200), // Evita doppio refresh se cambi filtri velocemente
@@ -99,8 +101,8 @@ export class OperazioniPanelComponent implements OnInit {
         this.isLoading.set(true);
         this.error.set(null);
       }),
-      switchMap(([page, anno, mese, conto, tag, data]) => {
-        
+      switchMap(([page, anno, mese, conto, tag, data, descrizione]) => {
+
         // Costruzione filtri per API
         const filters: FiltriOperazioni = {
           page,
@@ -109,7 +111,8 @@ export class OperazioniPanelComponent implements OnInit {
           mese: mese || undefined,
           conto_id: conto || undefined,
           tag: tag || undefined,
-          data: data || undefined
+          data: data || undefined,
+          descrizione: descrizione || undefined
         };
 
         // Chiamata parallela: Operazioni + Statistiche
@@ -180,10 +183,11 @@ export class OperazioniPanelComponent implements OnInit {
   }
 
   // Metodo generico per input
-  updateFilter(type: 'data' | 'conto', val: any) {
+  updateFilter(type: 'data' | 'conto' | 'descrizione', val: any) {
     this.currentPage.set(1);
     if (type === 'data') this.filterData.set(val);
     if (type === 'conto') this.filterConto.set(val);
+    if (type === 'descrizione') this.filterDescrizione.set(val);
   }
 
   // Gestione Tag Select

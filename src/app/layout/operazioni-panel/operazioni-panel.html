@@ -55,6 +55,9 @@
         </div>
         }
       </div>
+
+      <input type="text" [ngModel]="filterDescrizione()" (ngModelChange)="updateFilter('descrizione', $event)"
+        placeholder="Cerca per descrizione..." class="filtro-input" />
     </div>
   </div>
 
