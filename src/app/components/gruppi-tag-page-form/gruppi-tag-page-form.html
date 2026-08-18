@@ -1,0 +1,76 @@
+@if (_isOpen()) {
+<div class="modal-backdrop" (click)="onClose()"></div>
+}
+
+@if (_isOpen()) {
+<div class="modal-container">
+
+    <div class="modal-header">
+        <h2>{{ _gruppoEdit() ? 'Modifica Gruppo Tag' : 'Nuovo Gruppo Tag' }}</h2>
+        <button class="close-btn" (click)="onClose()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+        @if (error()) {
+        <div class="alert alert-error">{{ error() }}</div>
+        }
+
+        @if (success()) {
+        <div class="alert alert-success">{{ success() }}</div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+            <div class="form-group">
+                <label for="nome">Nome Gruppo *</label>
+                <input id="nome" type="text" formControlName="nome" placeholder="Es: spese auto, casa..."
+                    [class.input-error]="form.get('nome')?.invalid && form.get('nome')?.touched" />
+
+                @if (form.get('nome')?.invalid && form.get('nome')?.touched) {
+                <span class="error-text">Il nome è obbligatorio (min 3 caratteri).</span>
+                }
+            </div>
+
+            <div class="form-group">
+                <label>Tag inclusi *</label>
+
+                <input type="text" [ngModel]="tagSearchInput()" [ngModelOptions]="{standalone: true}"
+                    (ngModelChange)="tagSearchInput.set($event)" placeholder="Cerca tag da includere..."
+                    class="tag-search-input" />
+
+                <div class="tags-checklist">
+                    @for (tag of filteredTagsDisponibili(); track tag.id) {
+                    <label class="tag-checkbox" [class.selected]="isTagSelected(tag.id)">
+                        <input type="checkbox" [checked]="isTagSelected(tag.id)" (change)="toggleTag(tag.id)" />
+                        {{ tag.nome }}
+                    </label>
+                    } @empty {
+                    <span class="no-tags-found">Nessun tag corrisponde alla ricerca.</span>
+                    }
+                </div>
+
+                @if (selectedTagIds().size === 0 && form.get('nome')?.touched) {
+                <span class="error-text">Seleziona almeno un tag.</span>
+                }
+            </div>
+
+        </form>
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn-cancel" type="button" (click)="onClose()" [disabled]="loading()">
+            Annulla
+        </button>
+
+        <button class="btn-save" type="button" (click)="onSubmit()" [disabled]="loading() || success()">
+            @if (loading()) {
+            Salvataggio...
+            } @else {
+            {{ _gruppoEdit() ? 'Salva Modifiche' : 'Crea Gruppo' }}
+            }
+        </button>
+    </div>
+
+</div>
+}

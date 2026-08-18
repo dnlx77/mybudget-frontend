@@ -8,6 +8,7 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { OperazioneService, Operazione, FiltriOperazioni } from '../../services/operazione.service';
 import { ContoService, Conto } from '../../services/conto.service';
 import { TagService, TagModel } from '../../services/tag.service';
+import { GruppoTagService, GruppoTagModel } from '../../services/gruppo-tag.service';
 import { EventService } from '../../services/event';
 
 // Components & Pipes
@@ -28,6 +29,7 @@ export class OperazioniPanelComponent implements OnInit {
   private operazioneService = inject(OperazioneService);
   private contoService = inject(ContoService);
   private tagService = inject(TagService);
+  private gruppoTagService = inject(GruppoTagService);
   private eventService = inject(EventService);
 
   // ============================================================
@@ -52,6 +54,7 @@ export class OperazioniPanelComponent implements OnInit {
   statistiche = signal({ guadagno: 0, spese: 0, saldo: 0 });
   conti = signal<Conto[]>([]);
   tags = signal<TagModel[]>([]);
+  gruppiTag = signal<GruppoTagModel[]>([]);
 
   // Paginazione response
   paginationState = signal({
@@ -64,6 +67,9 @@ export class OperazioniPanelComponent implements OnInit {
   // Gestione Tag Search
   tagSearchInput = signal('');
   selectedTagFilter = signal<TagModel | null>(null);
+
+  // Gestione filtro per Gruppo Tag ("tag virtuale": più tag applicati insieme)
+  selectedGroupFilter = signal<GruppoTagModel | null>(null);
 
   // Computed Signal: Filtra i tag in memoria mentre scrivi
   filteredTags = computed(() => {
@@ -166,6 +172,9 @@ export class OperazioniPanelComponent implements OnInit {
     this.tagService.getTags().subscribe(res => {
       if (res.success) this.tags.set(res.data);
     });
+    this.gruppoTagService.getGruppi().subscribe(res => {
+      if (res.success) this.gruppiTag.set(res.data);
+    });
   }
 
   // ============================================================
@@ -193,15 +202,34 @@ export class OperazioniPanelComponent implements OnInit {
   // Gestione Tag Select
   selectTag(tag: TagModel) {
     this.selectedTagFilter.set(tag);
+    this.selectedGroupFilter.set(null); // un tag singolo sostituisce il gruppo eventualmente attivo
     this.currentPage.set(1);
     this.filterTag.set(tag.id.toString());
-    this.tagSearchInput.set(''); 
+    this.tagSearchInput.set('');
   }
 
   clearTagFilter() {
     this.selectedTagFilter.set(null);
+    this.selectedGroupFilter.set(null);
     this.currentPage.set(1);
     this.filterTag.set('');
+  }
+
+  // Gestione filtro Gruppo Tag: applica tutti i tag del gruppo insieme (OR)
+  selectGroup(gruppo: GruppoTagModel) {
+    this.selectedGroupFilter.set(gruppo);
+    this.selectedTagFilter.set(null); // il gruppo sostituisce il tag singolo eventualmente attivo
+    this.currentPage.set(1);
+    this.filterTag.set(gruppo.tags.map(t => t.id).join(','));
+  }
+
+  onGroupSelectChange(val: string) {
+    if (!val) {
+      this.clearTagFilter();
+      return;
+    }
+    const gruppo = this.gruppiTag().find(g => g.id === Number(val));
+    if (gruppo) this.selectGroup(gruppo);
   }
 
   // Paginazione

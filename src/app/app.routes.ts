@@ -6,6 +6,7 @@ import { DashboardLayout } from './layout/dashboard-layout/dashboard-layout';
 import { authGuard } from './guards/auth-guard';
 import { ContiPage } from './components/conti-page/conti-page';
 import { TagsPage } from './components/tags-page/tags-page';
+import { GruppiTagPage } from './components/gruppi-tag-page/gruppi-tag-page';
 import { GraficiPage } from './components/grafici-page/grafici-page';
 
 export const routes: Routes = [
@@ -40,6 +41,11 @@ export const routes: Routes = [
   {
     path: 'tags',
     component: TagsPage,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'gruppi-tag',
+    component: GruppiTagPage,
     canActivate: [authGuard]
   },
   {

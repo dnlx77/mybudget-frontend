@@ -56,6 +56,14 @@
         }
       </div>
 
+      <select [ngModel]="selectedGroupFilter()?.id ?? ''" (ngModelChange)="onGroupSelectChange($event)"
+        class="filtro-input filtro-select">
+        <option value="">-- Gruppo Tag --</option>
+        @for (gruppo of gruppiTag(); track gruppo.id) {
+        <option [value]="gruppo.id">{{ gruppo.nome }}</option>
+        }
+      </select>
+
       <input type="text" [ngModel]="filterDescrizione()" (ngModelChange)="updateFilter('descrizione', $event)"
         placeholder="Cerca per descrizione..." class="filtro-input" />
     </div>

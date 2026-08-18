@@ -1,0 +1,58 @@
+<div class="tags-page-list">
+    <div class="header">
+        <h1>Gruppi Tag</h1>
+        <button (click)="openFormNew()">➕ Nuovo Gruppo</button>
+    </div>
+
+    @if (loading()) {
+    <div class="loading">Caricamento in corso...</div>
+    }
+
+    @if (error()) {
+    <div class="error">{{ error() }}</div>
+    }
+
+    @if (!loading() && gruppi().length > 0) {
+    <table class="tags-table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Tag inclusi</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (gruppo of gruppi(); track gruppo.id) {
+            <tr>
+                <td>{{ gruppo.nome }}</td>
+                <td>
+                    <div class="tags-badges">
+                        @for (tag of gruppo.tags; track tag.id) {
+                        <span class="tag-badge">{{ tag.nome }}</span>
+                        }
+                    </div>
+                </td>
+                <td>
+                    <div class="azioni">
+                        <button class="btn-edit" (click)="editGruppo(gruppo)" title="Modifica">✏️</button>
+                        <button class="btn-delete" (click)="deleteGruppo(gruppo.id)" title="Elimina">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+
+    @if (!loading() && gruppi().length === 0) {
+    <div class="no-data">
+        <p>Nessun gruppo tag trovato.</p>
+        <small>Crea un gruppo per raccogliere più tag e filtrarli insieme nella dashboard.</small>
+    </div>
+    }
+
+    <app-gruppi-tag-page-form [isOpen]="isFormOpen()" [gruppoEdit]="gruppoEdit()" (close)="closeForm()"
+        (saved)="onGruppoSaved()">
+    </app-gruppi-tag-page-form>
+
+</div>
