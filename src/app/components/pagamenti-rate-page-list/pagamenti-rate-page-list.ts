@@ -2,12 +2,17 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PagamentoRataModel, PagamentoRataService } from '../../services/pagamento-rata.service';
 import { PagamentiRatePageForm } from '../pagamenti-rate-page-form/pagamenti-rate-page-form';
+import { PaginationComponent } from '../pagination/pagination.component';
 import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
+
+const PER_PAGE = 15;
+
+type FiltroStato = '' | 'attivo' | 'completato';
 
 @Component({
   selector: 'app-pagamenti-rate-page-list',
   standalone: true,
-  imports: [CommonModule, PagamentiRatePageForm, CurrencyEuroPipe],
+  imports: [CommonModule, PagamentiRatePageForm, PaginationComponent, CurrencyEuroPipe],
   templateUrl: './pagamenti-rate-page-list.html',
   styleUrl: './pagamenti-rate-page-list.css',
 })
@@ -19,19 +24,35 @@ export class PagamentiRatePageList implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
 
+  paginationState = signal({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: PER_PAGE
+  });
+
   isFormOpen = signal(false);
   pagamentoEdit = signal<PagamentoRataModel | null>(null);
+
+  filterStato = signal<FiltroStato>('');
 
   ngOnInit(): void {
     this.loadPagamenti();
   }
 
-  loadPagamenti(): void {
+  loadPagamenti(page: number = this.paginationState().current_page): void {
     this.loading.set(true);
-    this.pagamentoRataService.getPagamenti().subscribe({
+    const stato = this.filterStato() || undefined;
+    this.pagamentoRataService.getPagamenti({ page, per_page: PER_PAGE, stato }).subscribe({
       next: (res) => {
         if (res.success) {
           this.pagamenti.set(res.data);
+          this.paginationState.set({
+            current_page: res.pagination.current_page,
+            last_page: res.pagination.last_page,
+            total: res.pagination.total,
+            per_page: res.pagination.per_page
+          });
           this.error.set(null);
         } else {
           this.error.set('Errore caricamento pagamenti a rate');
@@ -43,6 +64,18 @@ export class PagamentiRatePageList implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  goToPage(page: number): void {
+    if (page > 0 && page <= this.paginationState().last_page) {
+      this.loadPagamenti(page);
+    }
+  }
+
+  setFilterStato(stato: FiltroStato): void {
+    if (this.filterStato() === stato) return;
+    this.filterStato.set(stato);
+    this.loadPagamenti(1);
   }
 
   percentualeCompletamento(p: PagamentoRataModel): number {
@@ -66,7 +99,9 @@ export class PagamentiRatePageList implements OnInit {
   }
 
   onPagamentoSaved(): void {
-    this.loadPagamenti();
+    // Una nuova creazione compare in cima (ordinata per data creazione): torna a pagina 1
+    const eraNuovoInserimento = !this.pagamentoEdit();
+    this.loadPagamenti(eraNuovoInserimento ? 1 : this.paginationState().current_page);
   }
 
   deletePagamento(p: PagamentoRataModel): void {
@@ -79,7 +114,10 @@ export class PagamentiRatePageList implements OnInit {
 
     this.pagamentoRataService.deletePagamento(p.id).subscribe({
       next: () => {
-        this.pagamenti.update(list => list.filter(x => x.id !== p.id));
+        // Se era l'ultimo elemento della pagina (e non siamo sulla prima), torna indietro di una pagina
+        const { current_page } = this.paginationState();
+        const nuovaPagina = this.pagamenti().length === 1 && current_page > 1 ? current_page - 1 : current_page;
+        this.loadPagamenti(nuovaPagina);
       },
       error: () => alert('Errore: impossibile eliminare il pagamento a rate.')
     });

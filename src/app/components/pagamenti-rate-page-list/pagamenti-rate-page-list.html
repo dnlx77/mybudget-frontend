@@ -4,6 +4,12 @@
         <button (click)="openFormNew()">➕ Nuovo Pagamento a Rate</button>
     </div>
 
+    <div class="filtro-stato">
+        <button [class.active]="filterStato() === ''" (click)="setFilterStato('')">Tutti</button>
+        <button [class.active]="filterStato() === 'attivo'" (click)="setFilterStato('attivo')">Attivi</button>
+        <button [class.active]="filterStato() === 'completato'" (click)="setFilterStato('completato')">Completati</button>
+    </div>
+
     @if (loading()) {
     <div class="loading">Caricamento in corso...</div>
     }
@@ -53,12 +59,22 @@
         </div>
         }
     </div>
+
+    <app-pagination [currentPage]="paginationState().current_page" [totalPages]="paginationState().last_page"
+        [totalCount]="paginationState().total" (pageChange)="goToPage($event)">
+    </app-pagination>
     }
 
     @if (!loading() && pagamenti().length === 0) {
     <div class="no-data">
+        @if (filterStato() === 'attivo') {
+        <p>Nessun pagamento a rate attivo.</p>
+        } @else if (filterStato() === 'completato') {
+        <p>Nessun pagamento a rate completato.</p>
+        } @else {
         <p>Nessun pagamento a rate trovato.</p>
         <small>Crea un piano per tenere traccia di acquisti pagati a rate: collegando le operazioni reali man mano che le registri, il residuo si aggiorna da solo.</small>
+        }
     </div>
     }
 

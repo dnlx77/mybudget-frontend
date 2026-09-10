@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_CONFIG } from '../config/api.config';
+import { PaginationData } from './operazione.service';
 
 // Interface per il modello PagamentoRata
 // importo_pagato, importo_residuo, rate_pagate e stato sono calcolati dal backend
@@ -36,7 +37,14 @@ export interface PagamentoRataResponse {
 export interface PagamentiRateListResponse {
   success: boolean;
   data: PagamentoRataModel[];
+  pagination: PaginationData;
   message: string;
+}
+
+export interface PagamentiRateListParams {
+  page?: number;
+  per_page?: number;
+  stato?: 'attivo' | 'completato';
 }
 
 @Injectable({
@@ -50,8 +58,13 @@ export class PagamentoRataService {
   /**
    * GET /api/v1/pagamenti-rate
    */
-  getPagamenti(): Observable<PagamentiRateListResponse> {
-    return this.http.get<PagamentiRateListResponse>(this.apiUrl);
+  getPagamenti(params: PagamentiRateListParams = {}): Observable<PagamentiRateListResponse> {
+    let httpParams = new HttpParams();
+    if (params.page) httpParams = httpParams.set('page', params.page);
+    if (params.per_page) httpParams = httpParams.set('per_page', params.per_page);
+    if (params.stato) httpParams = httpParams.set('stato', params.stato);
+
+    return this.http.get<PagamentiRateListResponse>(this.apiUrl, { params: httpParams });
   }
 
   /**

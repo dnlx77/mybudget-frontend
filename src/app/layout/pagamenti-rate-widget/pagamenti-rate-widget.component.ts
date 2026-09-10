@@ -39,7 +39,8 @@ export class PagamentiRateWidgetComponent implements OnInit {
   }
 
   loadPagamenti(): void {
-    this.pagamentoRataService.getPagamenti().subscribe({
+    // per_page alto: il widget calcola conteggio/residuo sull'elenco completo, non su una pagina
+    this.pagamentoRataService.getPagamenti({ per_page: 1000 }).subscribe({
       next: (res) => {
         if (res.success) this.pagamenti.set(res.data);
         this.loading.set(false);

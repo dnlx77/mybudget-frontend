@@ -147,7 +147,7 @@ export class OperazioneFormComponent implements OnInit {
     this.tagService.getTags().subscribe(res => {
       if(res.success) this.allTags.set(res.data);
     });
-    this.pagamentoRataService.getPagamenti().subscribe(res => {
+    this.pagamentoRataService.getPagamenti({ per_page: 1000 }).subscribe(res => {
       if(res.success) this.pagamentiRate.set(res.data);
     });
   }

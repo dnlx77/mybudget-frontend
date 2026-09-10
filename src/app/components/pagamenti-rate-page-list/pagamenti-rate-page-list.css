@@ -49,6 +49,36 @@
 }
 
 /* ============================================================
+   FILTRO STATO
+   ============================================================ */
+.filtro-stato {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: -0.75rem;
+}
+
+.filtro-stato button {
+    background: #f5f5f7;
+    color: #666;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filtro-stato button:hover {
+    background: #ececf1;
+}
+
+.filtro-stato button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+/* ============================================================
    ALERT / LOADING
    ============================================================ */
 .error {
@@ -262,6 +292,12 @@
     .header button {
         width: 100%;
         padding: 12px;
+    }
+
+    .filtro-stato {
+        margin-top: 0;
+        justify-content: center;
+        flex-wrap: wrap;
     }
 
     .pagamenti-grid {
