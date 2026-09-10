@@ -11,12 +11,17 @@ export interface Operazione {
   descrizione: string;
   conto_id: number;
   conto_destinazione_id?: number; // Opzionale per il form (trasferimenti)
+  pagamento_rata_id?: number | null; // Opzionale: collega a un pagamento a rate
   trasferimento: 'T' | 'N';       // Tipizzazione stretta
   transfer_code?: string | null;  // Nuovo campo UUID
   conto?: {
     id: number;
     nome: string;
   };
+  pagamento_rata?: {  // Laravel serializza la relazione pagamentoRata() in snake_case
+    id: number;
+    nome: string;
+  } | null;
   tags?: Array<{
     id: number;
     nome: string;

@@ -7,6 +7,7 @@ import { authGuard } from './guards/auth-guard';
 import { ContiPage } from './components/conti-page/conti-page';
 import { TagsPage } from './components/tags-page/tags-page';
 import { GruppiTagPage } from './components/gruppi-tag-page/gruppi-tag-page';
+import { PagamentiRatePage } from './components/pagamenti-rate-page/pagamenti-rate-page';
 import { GraficiPage } from './components/grafici-page/grafici-page';
 
 export const routes: Routes = [
@@ -46,6 +47,11 @@ export const routes: Routes = [
   {
     path: 'gruppi-tag',
     component: GruppiTagPage,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'pagamenti-rate',
+    component: PagamentiRatePage,
     canActivate: [authGuard]
   },
   {

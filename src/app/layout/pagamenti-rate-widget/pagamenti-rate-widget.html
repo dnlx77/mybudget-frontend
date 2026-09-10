@@ -1,0 +1,29 @@
+<a class="pagamenti-rate-widget" routerLink="/pagamenti-rate">
+  @if (loading()) {
+  <div class="skeleton-loader">
+    <div class="skeleton-item"></div>
+  </div>
+  } @else {
+
+  <div class="widget-header">
+    <h3>Pagamenti a Rate</h3>
+    <span class="widget-arrow">›</span>
+  </div>
+
+  @if (pagamentiAttivi().length > 0) {
+  <div class="widget-body">
+    <div class="widget-stat">
+      <span class="widget-stat-value">{{ pagamentiAttivi().length }}</span>
+      <span class="widget-stat-label">{{ pagamentiAttivi().length === 1 ? 'piano attivo' : 'piani attivi' }}</span>
+    </div>
+    <div class="widget-stat">
+      <span class="widget-stat-value residuo">{{ residuoTotale() | currencyEuro }}</span>
+      <span class="widget-stat-label">residuo totale</span>
+    </div>
+  </div>
+  } @else {
+  <p class="widget-no-data">Nessun pagamento a rate attivo</p>
+  }
+
+  }
+</a>

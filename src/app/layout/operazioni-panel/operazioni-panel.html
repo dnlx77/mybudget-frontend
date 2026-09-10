@@ -131,6 +131,9 @@
             @if (op.trasferimento === 'T') {
             <span class="badge-transfer" title="Trasferimento">🔄</span>
             }
+            @if (op.pagamento_rata) {
+            <span class="badge-transfer" [title]="'Rata: ' + op.pagamento_rata.nome">📅</span>
+            }
           </td>
           <td class="importo" [class.positivo]="op.importo > 0" [class.negativo]="op.importo < 0">
             {{ op.importo | currencyEuro }}

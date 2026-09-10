@@ -1,0 +1,90 @@
+.pagamenti-rate-widget {
+  display: block;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-top: 4px solid #667eea;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.pagamenti-rate-widget:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.widget-header h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.widget-arrow {
+  font-size: 1.3rem;
+  color: #999;
+  line-height: 1;
+}
+
+.widget-body {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  gap: 1rem;
+}
+
+.widget-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.widget-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: #333;
+}
+
+.widget-stat-value.residuo {
+  color: #c0392b;
+}
+
+.widget-stat-label {
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.widget-no-data {
+  margin: 0.75rem 0 0 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.skeleton-loader {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-item {
+  height: 60px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

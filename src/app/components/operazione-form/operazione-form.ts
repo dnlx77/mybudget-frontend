@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OperazioneService, Operazione } from '../../services/operazione.service';
 import { ContoService, Conto } from '../../services/conto.service';
 import { TagService, TagModel } from '../../services/tag.service';
+import { PagamentoRataService, PagamentoRataModel } from '../../services/pagamento-rata.service';
 
 @Component({
   selector: 'app-operazione-form',
@@ -47,6 +48,13 @@ export class OperazioneFormComponent implements OnInit {
   // Dati da API
   conti = signal<Conto[]>([]);
   allTags = signal<TagModel[]>([]);
+  pagamentiRate = signal<PagamentoRataModel[]>([]);
+
+  // Piani attivi + quello eventualmente già collegato (anche se nel frattempo completato)
+  pagamentiSelezionabili = computed(() => {
+    const editId = this._operazioneEdit()?.pagamento_rata_id;
+    return this.pagamentiRate().filter(p => p.stato === 'attivo' || p.id === editId);
+  });
   
   // Gestione Tag (Fuori dal FormGroup per facilità UI)
   selectedTags = signal<TagModel[]>([]);
@@ -63,13 +71,15 @@ export class OperazioneFormComponent implements OnInit {
     importo: [null as number | null, [Validators.required, Validators.min(0.01)]], // <-- NUOVO: Solo numeri positivi
     descrizione: [''],
     conto_id: [null as number | null, Validators.required],
-    conto_destinazione_id: [null as number | null] // Opzionale
+    conto_destinazione_id: [null as number | null], // Opzionale
+    pagamento_rata_id: [null as number | null] // Opzionale
   });
 
   // Services
   private operazioneService = inject(OperazioneService);
   private contoService = inject(ContoService);
   private tagService = inject(TagService);
+  private pagamentoRataService = inject(PagamentoRataService);
 
   // COMPUTED: Filtro Tag intelligenti
   filteredTags = computed(() => {
@@ -100,7 +110,8 @@ export class OperazioneFormComponent implements OnInit {
             importo: null,
             descrizione: '',
             conto_id: null,
-            conto_destinazione_id: null
+            conto_destinazione_id: null,
+            pagamento_rata_id: null
           });
           this.selectedTags.set([]);
         }
@@ -136,6 +147,9 @@ export class OperazioneFormComponent implements OnInit {
     this.tagService.getTags().subscribe(res => {
       if(res.success) this.allTags.set(res.data);
     });
+    this.pagamentoRataService.getPagamenti().subscribe(res => {
+      if(res.success) this.pagamentiRate.set(res.data);
+    });
   }
 
   // LOGICA FORM
@@ -150,7 +164,8 @@ export class OperazioneFormComponent implements OnInit {
       importo: importoAssoluto, // <-- Mostriamo il numero senza il meno
       descrizione: op.descrizione,
       conto_id: op.conto_id,
-      conto_destinazione_id: null // In edit non gestiamo cambio destinazione complesso per ora
+      conto_destinazione_id: null, // In edit non gestiamo cambio destinazione complesso per ora
+      pagamento_rata_id: op.pagamento_rata_id ?? null
     });
     
     if (op.tags) {

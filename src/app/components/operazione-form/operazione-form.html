@@ -137,6 +137,20 @@
                         formControlName="descrizione" rows="2" placeholder="Es: Spesa supermercato..."></textarea>
                 </div>
 
+                @if (!form.get('conto_destinazione_id')?.value) {
+                <div class="form-group">
+                    <label for="pagamento-rata">
+                        Pagamento a Rate <span class="badge-optional">Opzionale</span>
+                    </label>
+                    <select id="pagamento-rata" formControlName="pagamento_rata_id">
+                        <option [value]="null">-- Nessuno --</option>
+                        @for (p of pagamentiSelezionabili(); track p.id) {
+                        <option [value]="p.id">{{ p.nome }} ({{ p.rate_pagate }}/{{ p.numero_rate }} rate)</option>
+                        }
+                    </select>
+                </div>
+                }
+
             </form>
             }
         </div>
