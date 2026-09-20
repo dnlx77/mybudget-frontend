@@ -301,6 +301,157 @@
 }
 
 /* ============================================================
+   CONFRONTO TRA PERIODI
+   ============================================================ */
+
+.confronto-section {
+    margin-top: 3rem;
+}
+
+.confronto-header {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.confronto-title h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 22px;
+    color: #333;
+}
+
+.confronto-hint {
+    margin: 0;
+    font-size: 13px;
+    color: #888;
+}
+
+.confronto-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-end;
+}
+
+.confronto-controls .form-group {
+    min-width: 260px;
+    flex: none;
+}
+
+.parita-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+}
+
+.confronto-body {
+    transition: opacity 0.2s;
+}
+
+.confronto-body.aggiornamento {
+    opacity: 0.5;
+}
+
+.confronto-periodi {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+    font-size: 13px;
+    color: #777;
+}
+
+.periodo-tag {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.periodo-tag.a {
+    background: #e0e7ff;
+    color: #667eea;
+}
+
+.periodo-tag.b {
+    background: #ececf1;
+    color: #7b7e93;
+}
+
+.vs {
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.confronto-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.confronto-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 4px solid #667eea;
+}
+
+.confronto-card .valore-a {
+    font-size: 26px;
+    font-weight: 700;
+    color: #333;
+}
+
+.confronto-card .valore-b {
+    font-size: 13px;
+    color: #888;
+}
+
+.confronto-card .delta {
+    margin-top: 6px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #888;
+}
+
+.confronto-card .delta.positive {
+    color: #10b981;
+}
+
+.confronto-card .delta.negative {
+    color: #ef4444;
+}
+
+.delta-perc {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.chart-container.tall {
+    height: 440px;
+}
+
+/* ============================================================
    PLACEHOLDER & LOADING
    ============================================================ */
 
@@ -360,6 +511,15 @@
 @media (max-width: 1024px) {
     .charts-grid {
         grid-template-columns: 1fr;
+    }
+
+    .confronto-cards {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .confronto-controls .form-group {
+        min-width: 100%;
     }
 
     .chart-card.full-width {

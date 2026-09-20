@@ -7,15 +7,16 @@ import { Subject, combineLatest, switchMap, forkJoin, of, tap, catchError } from
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 // Services
-import { GraficiService, FiltriGraficiParams } from '../../services/grafici';
+import { GraficiService, FiltriGraficiParams, PresetConfronto, ConfrontoPeriodiData } from '../../services/grafici';
 import { ContoService } from '../../services/conto.service';
 import { EventService } from '../../services/event';
 import { TagService, TagModel } from '../../services/tag.service';
+import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
 
 @Component({
   selector: 'app-grafici-page',
   standalone: true,
-  imports: [CommonModule, NgxEchartsModule, FormsModule],
+  imports: [CommonModule, NgxEchartsModule, FormsModule, CurrencyEuroPipe],
   templateUrl: './grafici-page.html',
   styleUrls: ['./grafici-page.css']
 })
@@ -82,6 +83,45 @@ export class GraficiPage implements OnInit {
   statsGuadagniVsSpese = signal<any>(null);
   statsAndamento = signal<any>(null);
   
+  // ============================================================
+  // CONFRONTO TRA PERIODI
+  // Ha una pipeline propria: dipende da preset/parità e dai filtri conto/tag,
+  // NON dal range di date scelto per gli altri grafici.
+  // ============================================================
+  readonly presetConfronto: { value: PresetConfronto; label: string }[] = [
+    { value: 'mese_scorso', label: 'Mese corrente vs mese scorso' },
+    { value: 'anno_scorso', label: 'Anno corrente vs anno scorso' },
+    { value: 'stesso_mese_anno_scorso', label: 'Stesso mese, anno scorso' }
+  ];
+
+  confrontoPreset = signal<PresetConfronto>('mese_scorso');
+  confrontoParita = signal(true);
+  confrontoLoading = signal(false);
+  confrontoErrore = signal(false);
+  confrontoData = signal<ConfrontoPeriodiData | null>(null);
+  confrontoTagOption = signal<EChartsOption>({});
+  confrontoCumulativaOption = signal<EChartsOption>({});
+
+  // Per le uscite un aumento è un peggioramento (rosso), per entrate e saldo è un miglioramento (verde)
+  vociRiepilogo = computed(() => {
+    const d = this.confrontoData();
+    if (!d) return [];
+
+    return [
+      { chiave: 'entrate', label: 'Entrate', v: d.riepilogo.entrate, piuMeglio: true },
+      { chiave: 'uscite', label: 'Uscite', v: d.riepilogo.uscite, piuMeglio: false },
+      { chiave: 'saldo', label: 'Saldo', v: d.riepilogo.saldo, piuMeglio: true }
+    ].map(voce => ({
+      ...voce,
+      classe: voce.v.differenza === 0 ? '' : ((voce.v.differenza > 0) === voce.piuMeglio ? 'positive' : 'negative')
+    }));
+  });
+
+  confrontoVuoto = computed(() => {
+    const r = this.confrontoData()?.riepilogo;
+    return !!r && r.entrate.a === 0 && r.entrate.b === 0 && r.uscite.a === 0 && r.uscite.b === 0;
+  });
+
   private reloadTrigger$ = new Subject<void>();
 
   constructor() {
@@ -117,6 +157,39 @@ export class GraficiPage implements OnInit {
     ).subscribe((results: any) => {
       this.loading.set(false);
       this.updateCharts(results);
+    });
+
+    // PIPELINE CONFRONTO PERIODI
+    combineLatest([
+      toObservable(this.confrontoPreset),
+      toObservable(this.confrontoParita),
+      toObservable(this.contoId),
+      toObservable(this.selectedTagIds),
+      this.reloadTrigger$.pipe(catchError(() => of(null)))
+    ]).pipe(
+      tap(() => {
+        this.confrontoLoading.set(true);
+        this.confrontoErrore.set(false);
+      }),
+      switchMap(([preset, parita, conto, tags]) =>
+        this.graficiService.getConfrontoPeriodi({
+          preset,
+          parita_giorni: parita,
+          conto_id: conto,
+          tag_ids: tags.length > 0 ? tags : undefined
+        }).pipe(catchError(() => of(null)))
+      ),
+      takeUntilDestroyed()
+    ).subscribe(res => {
+      this.confrontoLoading.set(false);
+
+      if (res?.success) {
+        this.confrontoData.set(res.data);
+        this.confrontoTagOption.set(this.buildConfrontoTagOption(res.data));
+        this.confrontoCumulativaOption.set(this.buildConfrontoCumulativaOption(res.data));
+      } else {
+        this.confrontoErrore.set(true);
+      }
     });
 
     setTimeout(() => this.reloadTrigger$.next(), 0);
@@ -281,6 +354,67 @@ export class GraficiPage implements OnInit {
       series: [
         { name: 'Guadagni', type: 'bar', data: data.map(d => d.guadagni), itemStyle: { color: '#43e97b', borderRadius: [4, 4, 0, 0] } },
         { name: 'Spese', type: 'bar', data: data.map(d => d.spese), itemStyle: { color: '#f5576c', borderRadius: [4, 4, 0, 0] } }
+      ]
+    };
+  }
+
+  fmtPerc(p: number): string {
+    const testo = p.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return `${p > 0 ? '+' : ''}${testo}%`;
+  }
+
+  private fmtEuro(v: number): string {
+    return v.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+  }
+
+  // Barre orizzontali affiancate: per ogni tag, periodo corrente (viola) vs periodo di confronto (grigio)
+  private buildConfrontoTagOption(d: ConfrontoPeriodiData): EChartsOption {
+    // l'asse categorie parte dal basso: inverto per avere il tag più speso in alto
+    const righe = [...d.per_tag].reverse();
+
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v: any) => this.fmtEuro(Number(v)) },
+      legend: { top: 0, data: [d.periodo_a.etichetta, d.periodo_b.etichetta] },
+      grid: { left: '3%', right: '8%', bottom: '3%', top: 40, containLabel: true },
+      xAxis: { type: 'value' },
+      yAxis: { type: 'category', data: righe.map(r => r.nome) },
+      series: [
+        { name: d.periodo_a.etichetta, type: 'bar', data: righe.map(r => r.a), itemStyle: { color: '#667eea', borderRadius: [0, 4, 4, 0] } },
+        { name: d.periodo_b.etichetta, type: 'bar', data: righe.map(r => r.b), itemStyle: { color: '#c3c6d8', borderRadius: [0, 4, 4, 0] } }
+      ]
+    };
+  }
+
+  // Spesa cumulata giorno per giorno: due linee sovrapposte ("sto spendendo più in fretta di prima?")
+  private buildConfrontoCumulativaOption(d: ConfrontoPeriodiData): EChartsOption {
+    const perAnno = d.preset === 'anno_scorso';
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: any) => {
+          const lista = Array.isArray(params) ? params : [params];
+          const intestazione = perAnno ? lista[0].axisValue : `Giorno ${lista[0].axisValue}`;
+          const righe = lista
+            .filter((p: any) => p.value !== null && p.value !== undefined && p.value !== '-')
+            .map((p: any) => `${p.marker} ${p.seriesName}: <b>${this.fmtEuro(Number(p.value))}</b>`);
+          return [intestazione, ...righe].join('<br/>');
+        }
+      },
+      legend: { top: 0, data: [d.periodo_a.etichetta, d.periodo_b.etichetta] },
+      grid: { left: '3%', right: '4%', bottom: '3%', top: 40, containLabel: true },
+      xAxis: { type: 'category', data: d.cumulativa.etichette, boundaryGap: false },
+      yAxis: { type: 'value' },
+      series: [
+        {
+          name: d.periodo_b.etichetta, type: 'line', data: d.cumulativa.b, symbol: 'none', connectNulls: false,
+          lineStyle: { width: 2, color: '#b0b3c8', type: 'dashed' }, itemStyle: { color: '#b0b3c8' }
+        },
+        {
+          name: d.periodo_a.etichetta, type: 'line', data: d.cumulativa.a, symbol: 'none', connectNulls: false,
+          lineStyle: { width: 3, color: '#667eea' }, itemStyle: { color: '#667eea' },
+          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(102, 126, 234, 0.25)' }, { offset: 1, color: 'rgba(102, 126, 234, 0.0)' }] } }
+        }
       ]
     };
   }

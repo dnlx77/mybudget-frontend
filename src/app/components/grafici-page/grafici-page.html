@@ -169,4 +169,109 @@
             }
         </div>
     </div>
+
+    <div class="confronto-section">
+
+        <div class="confronto-header">
+            <div class="confronto-title">
+                <h2>⚖️ Confronto tra periodi</h2>
+                <p class="confronto-hint">Applica i filtri Conto e Categorie qui sopra; le date scelte sopra non influenzano il confronto.</p>
+            </div>
+
+            <div class="confronto-controls">
+                <div class="form-group">
+                    <label>Confronto</label>
+                    <select class="form-control" [ngModel]="confrontoPreset()" (ngModelChange)="confrontoPreset.set($event)">
+                        @for (p of presetConfronto; track p.value) {
+                        <option [ngValue]="p.value">{{ p.label }}</option>
+                        }
+                    </select>
+                </div>
+
+                <label class="parita-toggle" title="Se il periodo è in corso, confronta solo gli stessi giorni trascorsi (es. 1-20 settembre vs 1-20 agosto)">
+                    <input type="checkbox" [ngModel]="confrontoParita()" (ngModelChange)="confrontoParita.set($event)" />
+                    <span>A parità di giorni trascorsi</span>
+                </label>
+            </div>
+        </div>
+
+        @if (confrontoErrore()) {
+        <div class="chart-card">
+            <div class="placeholder-content">
+                <span class="placeholder-icon">⚠️</span>
+                <p class="placeholder-subtitle">Impossibile caricare il confronto. Riprova più tardi.</p>
+            </div>
+        </div>
+        } @else {
+
+        @if (confrontoData(); as d) {
+        <div class="confronto-body" [class.aggiornamento]="confrontoLoading()">
+
+            <div class="confronto-periodi">
+                <span class="periodo-tag a">{{ d.periodo_a.etichetta }}</span>
+                <span class="periodo-range">{{ d.periodo_a.inizio | date:'dd/MM/yyyy' }} – {{ d.periodo_a.fine | date:'dd/MM/yyyy' }}</span>
+                <span class="vs">vs</span>
+                <span class="periodo-tag b">{{ d.periodo_b.etichetta }}</span>
+                <span class="periodo-range">{{ d.periodo_b.inizio | date:'dd/MM/yyyy' }} – {{ d.periodo_b.fine | date:'dd/MM/yyyy' }}</span>
+            </div>
+
+            @if (confrontoVuoto()) {
+            <div class="chart-card">
+                <div class="placeholder-content">
+                    <span class="placeholder-icon">⚖️</span>
+                    <p class="placeholder-subtitle">Nessun movimento nei periodi confrontati</p>
+                </div>
+            </div>
+            } @else {
+
+            <div class="confronto-cards">
+                @for (voce of vociRiepilogo(); track voce.chiave) {
+                <div class="confronto-card">
+                    <span class="stat-label">{{ voce.label }}</span>
+                    <span class="valore-a">{{ voce.v.a | currencyEuro }}</span>
+                    <span class="valore-b">{{ d.periodo_b.etichetta }}: {{ voce.v.b | currencyEuro }}</span>
+                    <span class="delta" [ngClass]="voce.classe">
+                        @if (voce.v.differenza === 0) {
+                        Nessuna variazione
+                        } @else {
+                        {{ voce.v.differenza > 0 ? '+' : '' }}{{ voce.v.differenza | currencyEuro }}
+                        @if (voce.v.percentuale !== null) {
+                        <span class="delta-perc">({{ fmtPerc(voce.v.percentuale) }})</span>
+                        }
+                        }
+                    </span>
+                </div>
+                }
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <h3>Spese per categoria</h3>
+                    </div>
+                    @if (d.per_tag.length > 0) {
+                    <div echarts [options]="confrontoTagOption()" [autoResize]="true" class="chart-container tall"></div>
+                    } @else {
+                    <div class="placeholder-content">
+                        <span class="placeholder-icon">🏷️</span>
+                        <p class="placeholder-subtitle">Nessuna spesa nei periodi confrontati</p>
+                    </div>
+                    }
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <h3>Spesa cumulata</h3>
+                        <span class="periodo-badge">{{ d.parita_giorni ? 'A parità di giorni' : 'Periodi interi' }}</span>
+                    </div>
+                    <div echarts [options]="confrontoCumulativaOption()" [autoResize]="true" class="chart-container tall"></div>
+                </div>
+            </div>
+
+            }
+        </div>
+        }
+
+        }
+    </div>
 </div>

@@ -101,6 +101,60 @@ export interface ApiResponseAndamentoSaldo {
 }
 
 /**
+ * Confronto tra periodi: A = periodo corrente, B = periodo di confronto
+ */
+export type PresetConfronto = 'mese_scorso' | 'anno_scorso' | 'stesso_mese_anno_scorso';
+
+export interface VariazioneConfronto {
+  a: number;
+  b: number;
+  differenza: number;              // a - b
+  percentuale: number | null;      // null se b è 0
+}
+
+export interface PeriodoConfronto {
+  etichetta: string;               // es. "Settembre 2026" o "2026"
+  inizio: string;                  // YYYY-MM-DD
+  fine: string;                    // YYYY-MM-DD
+}
+
+export interface TagConfronto {
+  nome: string;
+  a: number;
+  b: number;
+}
+
+export interface ConfrontoPeriodiData {
+  preset: PresetConfronto;
+  parita_giorni: boolean;
+  periodo_a: PeriodoConfronto;
+  periodo_b: PeriodoConfronto;
+  riepilogo: {
+    entrate: VariazioneConfronto;
+    uscite: VariazioneConfronto;
+    saldo: VariazioneConfronto;
+  };
+  per_tag: TagConfronto[];
+  cumulativa: {
+    etichette: string[];
+    a: (number | null)[];          // null oltre la fine effettiva del periodo
+    b: (number | null)[];
+  };
+}
+
+export interface ApiResponseConfrontoPeriodi {
+  success: boolean;
+  data: ConfrontoPeriodiData;
+}
+
+export interface ConfrontoPeriodiParams {
+  preset: PresetConfronto;
+  parita_giorni: boolean;
+  conto_id?: number | null;
+  tag_ids?: number[];
+}
+
+/**
  * Interface per i parametri di filtro (Input Frontend)
  */
 export interface FiltriGraficiParams {
@@ -180,6 +234,20 @@ export class GraficiService {
     const params = this.buildParams(filtri);
     return this.http.get<ApiResponseAndamentoSaldo>(
       `${this.apiUrl}/andamento-saldo`,
+      { params }
+    );
+  }
+
+  /**
+   * Confronta il periodo corrente con uno precedente (preset), con filtri conto/tag
+   */
+  getConfrontoPeriodi(filtri: ConfrontoPeriodiParams): Observable<ApiResponseConfrontoPeriodi> {
+    const params = this.buildParams({ conto_id: filtri.conto_id, tag_ids: filtri.tag_ids })
+      .set('preset', filtri.preset)
+      .set('parita_giorni', filtri.parita_giorni ? '1' : '0');
+
+    return this.http.get<ApiResponseConfrontoPeriodi>(
+      `${this.apiUrl}/confronto-periodi`,
       { params }
     );
   }
