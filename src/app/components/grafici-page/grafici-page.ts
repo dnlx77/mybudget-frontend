@@ -11,6 +11,7 @@ import { GraficiService, FiltriGraficiParams, PresetConfronto, ConfrontoPeriodiD
 import { ContoService } from '../../services/conto.service';
 import { EventService } from '../../services/event';
 import { TagService, TagModel } from '../../services/tag.service';
+import { GruppoTagService, GruppoTagModel } from '../../services/gruppo-tag.service';
 import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
 
 @Component({
@@ -26,6 +27,7 @@ export class GraficiPage implements OnInit {
   private contoService = inject(ContoService);
   private eventService = inject(EventService);
   private tagService = inject(TagService);
+  private gruppoTagService = inject(GruppoTagService);
 
   // ============================================================
   // STATO (SIGNALS)
@@ -40,6 +42,9 @@ export class GraficiPage implements OnInit {
   availableTags = signal<TagModel[]>([]); // Tutti i tag dal DB
   selectedTagIds = signal<number[]>([]);  // Quelli attivi
   searchTerm = signal<string>('');        // 🆕 Testo nella barra di ricerca
+
+  // Gruppi Tag: scorciatoia per selezionare più tag insieme (si aggiungono a quelli già scelti)
+  gruppiTag = signal<GruppoTagModel[]>([]);
 
   // 🆕 LISTA CALCOLATA (FILTRO INTELLIGENTE)
   // Mostra un tag se:
@@ -204,6 +209,9 @@ export class GraficiPage implements OnInit {
     this.tagService.getTags().pipe(takeUntilDestroyed()).subscribe(res => {
       if(res.success) this.availableTags.set(res.data);
     });
+    this.gruppoTagService.getGruppi().pipe(takeUntilDestroyed()).subscribe(res => {
+      if(res.success) this.gruppiTag.set(res.data);
+    });
   }
 
   // ============================================================
@@ -231,6 +239,25 @@ export class GraficiPage implements OnInit {
   clearTags() {
     this.selectedTagIds.set([]);
     this.searchTerm.set('');
+  }
+
+  // Il select è solo un'azione rapida ("aggiungi questi tag"), non un filtro persistente:
+  // torna sempre al placeholder dopo la scelta, così può essere riusato per un altro gruppo.
+  // NOTA: reset diretto sull'elemento DOM (non tramite ngModel/ngValue) perché il
+  // mapping interno di Angular tra ngValue e id di opzione non si è dimostrato affidabile
+  // per un select le cui opzioni vengono ricreate a ogni giro di reset.
+  applicaGruppoTag(select: HTMLSelectElement) {
+    const gruppoId = select.value ? Number(select.value) : null;
+
+    if (gruppoId) {
+      const gruppo = this.gruppiTag().find(g => g.id === gruppoId);
+      if (gruppo) {
+        const nuoviIds = gruppo.tags.map(t => t.id);
+        this.selectedTagIds.update(ids => [...new Set([...ids, ...nuoviIds])]);
+      }
+    }
+
+    select.value = '';
   }
 
   // ============================================================

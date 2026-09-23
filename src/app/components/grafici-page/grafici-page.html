@@ -52,6 +52,16 @@
                         (input)="onSearchTag($event)">
                 </div>
 
+                @if (gruppiTag().length > 0) {
+                <select #gruppoTagSelect class="form-control gruppo-tag-select"
+                    (change)="applicaGruppoTag(gruppoTagSelect)" title="Aggiunge tutti i tag del gruppo alla selezione">
+                    <option value="">+ Aggiungi gruppo tag...</option>
+                    @for (gruppo of gruppiTag(); track gruppo.id) {
+                    <option [value]="gruppo.id">{{ gruppo.nome }}</option>
+                    }
+                </select>
+                }
+
                 @if (selectedTagIds().length > 0) {
                 <button class="btn-clear-tags" (click)="clearTags()">✕ Rimuovi filtri
                     ({{selectedTagIds().length}})</button>
