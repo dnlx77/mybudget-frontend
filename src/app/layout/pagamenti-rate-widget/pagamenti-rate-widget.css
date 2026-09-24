@@ -65,6 +65,27 @@
   color: #999;
 }
 
+.widget-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.widget-footer-label {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.widget-footer-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: #333;
+}
+
 .widget-no-data {
   margin: 0.75rem 0 0 0;
   color: #999;

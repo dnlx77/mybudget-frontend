@@ -21,6 +21,11 @@
       <span class="widget-stat-label">residuo totale</span>
     </div>
   </div>
+
+  <div class="widget-footer">
+    <span class="widget-footer-label">Spesa mensile residua</span>
+    <span class="widget-footer-value">{{ spesaMensileResidua() | currencyEuro }}</span>
+  </div>
   } @else {
   <p class="widget-no-data">Nessun pagamento a rate attivo</p>
   }

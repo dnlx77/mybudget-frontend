@@ -27,6 +27,12 @@ export class PagamentiRateWidgetComponent implements OnInit {
     this.pagamentiAttivi().reduce((acc, p) => acc + Number(p.importo_residuo), 0)
   );
 
+  // Somma delle rate mensili dei piani attivi (importo_totale / numero_rate di ciascuno):
+  // quanto continuerai a pagare ogni mese finché non completano.
+  spesaMensileResidua = computed(() =>
+    this.pagamentiAttivi().reduce((acc, p) => acc + (Number(p.importo_totale) / p.numero_rate), 0)
+  );
+
   constructor() {
     // Un'operazione collegata a un pagamento a rate ne cambia il residuo
     this.eventService.operazioneChanged$
