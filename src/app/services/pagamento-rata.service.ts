@@ -5,8 +5,9 @@ import { API_CONFIG } from '../config/api.config';
 import { PaginationData } from './operazione.service';
 
 // Interface per il modello PagamentoRata
-// importo_pagato, importo_residuo, rate_pagate e stato sono calcolati dal backend
-// (somma delle operazioni collegate), non salvati come dato a parte.
+// importo_pagato, importo_residuo, rate_pagate, stato, rata_mensile e
+// rata_mensile_residua sono calcolati dal backend (somma/presenza delle
+// operazioni collegate), non salvati come dato a parte.
 export interface PagamentoRataModel {
   id: number;
   nome: string;
@@ -17,6 +18,8 @@ export interface PagamentoRataModel {
   importo_residuo: number;
   rate_pagate: number;
   stato: 'attivo' | 'completato';
+  rata_mensile: number;           // importo_totale / numero_rate
+  rata_mensile_residua: number;   // rata_mensile se non ancora pagata questo mese, altrimenti 0
   created_at?: string;
   updated_at?: string;
 }
