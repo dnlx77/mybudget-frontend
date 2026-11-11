@@ -15,11 +15,12 @@ import { EventService } from '../../services/event';
 import { PaginationComponent } from '../../components/pagination/pagination.component';
 import { OperazioneFormComponent } from '../../components/operazione-form/operazione-form';
 import { CurrencyEuroPipe } from '../../pipes/currency-euro-pipe';
+import { BudgetIndicatorComponent } from '../budget-indicator/budget-indicator.component';
 
 @Component({
   selector: 'app-operazioni-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginationComponent, OperazioneFormComponent, CurrencyEuroPipe],
+  imports: [CommonModule, FormsModule, PaginationComponent, OperazioneFormComponent, CurrencyEuroPipe, BudgetIndicatorComponent],
   templateUrl: './operazioni-panel.html',
   styleUrl: './operazioni-panel.css',
 })

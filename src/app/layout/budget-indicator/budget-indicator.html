@@ -1,0 +1,105 @@
+@if (periodo()) {
+<div class="budget-box">
+
+  @if (errore()) {
+  <div class="budget-errore">Impossibile caricare il budget. Riprova più tardi.</div>
+  } @else if (dati(); as d) {
+
+  <div class="budget-header">
+    <span class="budget-titolo">Budget {{ d.etichetta }}</span>
+    @if (d.budget && !inModifica()) {
+    <button class="btn-link" (click)="apriModifica()">✏️ Modifica</button>
+    }
+  </div>
+
+  @if (inModifica()) {
+  <div class="budget-modifica">
+    <div class="importo-wrapper">
+      <input type="number" min="1" step="10" class="importo-input" [ngModel]="importoInput()"
+        (ngModelChange)="importoInput.set($event)" (keydown.enter)="salvaInput()" placeholder="Importo" />
+      <span class="euro">€</span>
+    </div>
+    <button class="btn-primario" (click)="salvaInput()"
+      [disabled]="salvataggio() || (importoInput() ?? 0) <= 0">Salva</button>
+    <button class="btn-secondario" (click)="annullaModifica()" [disabled]="salvataggio()">Annulla</button>
+    @if (d.proposta) {
+    <span class="budget-hint">
+      Proposta:
+      <button class="btn-link" (click)="importoInput.set(d.proposta)">{{ d.proposta | currencyEuro }}</button>
+    </span>
+    }
+  </div>
+
+  } @else if (indicatoreBudget(); as ind) {
+
+  <div class="barra" [title]="ind.descrizioneRitmo">
+    <div class="barra-riempimento" [ngClass]="'andamento-' + ind.andamento" [style.width.%]="ind.riempimento"></div>
+    @if (ind.mostraRitmo) {
+    <div class="marcatore-ritmo" [style.left.%]="ind.ritmo"></div>
+    }
+  </div>
+  <div class="budget-dettagli">
+    <span>
+      <strong>{{ ind.speso | currencyEuro }}</strong> di {{ ind.tetto | currencyEuro }}
+      <span class="percentuale">({{ ind.percentuale | number:'1.0-0' }}%)</span>
+    </span>
+    @if (ind.tetto >= ind.speso) {
+    <span class="residuo">Restano {{ ind.tetto - ind.speso | currencyEuro }}</span>
+    } @else {
+    <span class="superato">Superato di {{ ind.speso - ind.tetto | currencyEuro }}</span>
+    }
+  </div>
+
+  } @else {
+
+  <div class="budget-vuoto">
+    @if (d.proposta) {
+    <span>
+      Nessun budget per questo mese. Proposta: <strong>{{ d.proposta | currencyEuro }}</strong>
+      <span class="budget-hint">&nbsp;(media di {{ elencoMesi(d.mesi_riferimento) }})</span>
+    </span>
+    <div class="budget-azioni">
+      <button class="btn-primario" (click)="usaProposta()" [disabled]="salvataggio()">Usa proposta</button>
+      <button class="btn-secondario" (click)="apriModifica()">Altro importo</button>
+    </div>
+    } @else {
+    <span>Nessun budget per questo mese.</span>
+    <div class="budget-azioni">
+      <button class="btn-primario" (click)="apriModifica()">Imposta budget</button>
+    </div>
+    }
+    <span class="budget-hint">Speso finora: {{ d.speso | currencyEuro }}</span>
+  </div>
+
+  }
+
+  @if (d.tag) {
+  <div class="tag-indicatore">
+    <div class="tag-titolo">🏷️ {{ tagNome() ?? 'Categoria filtrata' }}</div>
+
+    @if (indicatoreTag(); as it) {
+    <div class="barra barra-sottile" [title]="it.descrizioneRitmo">
+      <div class="barra-riempimento" [ngClass]="'andamento-' + it.andamento" [style.width.%]="it.riempimento"></div>
+      @if (it.mostraRitmo) {
+      <div class="marcatore-ritmo" [style.left.%]="it.ritmo"></div>
+      }
+    </div>
+    <div class="budget-dettagli">
+      <span>
+        <strong>{{ it.speso | currencyEuro }}</strong> di {{ it.tetto | currencyEuro }}
+        <span class="percentuale">({{ it.percentuale | number:'1.0-0' }}%)</span>
+      </span>
+      <span class="budget-hint">media di {{ elencoMesi(d.tag.mesi_riferimento) }}</span>
+    </div>
+    } @else {
+    <div class="budget-dettagli">
+      <span><strong>{{ d.tag.speso | currencyEuro }}</strong> spesi questo mese</span>
+      <span class="budget-hint">nessuna spesa in questa categoria nei mesi precedenti</span>
+    </div>
+    }
+  </div>
+  }
+
+  }
+</div>
+}

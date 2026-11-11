@@ -75,6 +75,10 @@
   </div>
   }
 
+  <app-budget-indicator [anno]="filterAnno()" [mese]="filterMese()" [tag]="filterTag()"
+    [tagNome]="selectedTagFilter()?.nome ?? selectedGroupFilter()?.nome ?? null">
+  </app-budget-indicator>
+
   <div class="statistics-section">
     <div class="stat-card guadagno">
       <div class="stat-label">Entrate</div>

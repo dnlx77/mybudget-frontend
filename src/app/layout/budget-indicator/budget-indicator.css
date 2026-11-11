@@ -1,0 +1,205 @@
+.budget-box {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #667eea;
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.budget-titolo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   BARRA
+   ============================================================ */
+.barra {
+  position: relative;
+  height: 14px;
+  background: #f0f0f0;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.barra-sottile {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.barra-riempimento {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.4s ease, background-color 0.3s ease;
+}
+
+.barra-riempimento.andamento-ok {
+  background: #28a745;
+}
+
+.barra-riempimento.andamento-attenzione {
+  background: #f0ad4e;
+}
+
+.barra-riempimento.andamento-superato {
+  background: #dc3545;
+}
+
+/* Linea verticale: dove "dovresti" essere in base ai giorni trascorsi */
+.marcatore-ritmo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #333;
+  opacity: 0.55;
+}
+
+.budget-dettagli {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.percentuale {
+  color: #888;
+}
+
+.residuo {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.superato {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.budget-hint {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* ============================================================
+   NESSUN BUDGET / MODIFICA
+   ============================================================ */
+.budget-vuoto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.budget-azioni,
+.budget-modifica {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.importo-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0 8px;
+  height: 32px;
+  background: white;
+}
+
+.importo-wrapper:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.importo-input {
+  border: none;
+  outline: none;
+  width: 110px;
+  font-size: 0.9rem;
+}
+
+.euro {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.btn-primario,
+.btn-secondario {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primario {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-secondario {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-primario:disabled,
+.btn-secondario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #667eea;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   INDICATORE TAG
+   ============================================================ */
+.tag-indicatore {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e5e5e5;
+}
+
+.tag-titolo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 6px;
+}
+
+.budget-errore {
+  color: #c33;
+  font-size: 0.85rem;
+}
